@@ -47,8 +47,8 @@ import ManageApplications from "../pages/Admin/ManageApplications";
 import ManageUsers from "../pages/Admin/ManageUsers";
 
 // Components
-import ProtectedRoute from "../components/Common/ProtectedRoute";
-import RoleRoute from "../components/Common/RoleRoute";
+import ProtectedRoute from "../components/common/ProtectedRoute";
+import RoleRoute from "../components/common/RoleRoute";
 
 const AppRoutes = () => {
   return (
