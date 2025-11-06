@@ -20,8 +20,8 @@ import ProductList from "../pages/Products/ProductList";
 import ProductDetail from "../pages/Products/ProductDetail";
 
 // Cart & Checkout
-import Cart from "../pages/Cart/Cart";
-import Checkout from "../pages/Checkout/Checkout";
+import CartPage from "../pages/Cart/CartPage";
+import CheckoutPage from "../pages/Checkout/CheckoutPage";
 import OrderSuccess from "../pages/Checkout/OrderSuccess";
 
 // Orders
@@ -72,11 +72,11 @@ const AppRoutes = () => {
       <Route path="/products/:id" element={<ProductDetail />} />
 
       {/* Cart */}
-      <Route path="/cart" element={<Cart />} />
+      <Route path="/cart" element={<CartPage />} />
 
       {/* Protected Routes */}
       <Route element={<ProtectedRoute />}>
-        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/order-success/:id" element={<OrderSuccess />} />
         <Route path="/orders" element={<OrderList />} />
         <Route path="/orders/:id" element={<OrderDetail />} />
