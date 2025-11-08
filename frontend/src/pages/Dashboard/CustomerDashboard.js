@@ -54,6 +54,49 @@ const CustomerDashboard = () => {
           </div>
         </div>
       </div>
+
+      <div className="mt-4">
+        <h4 className="mb-3">Recent Orders</h4>
+        {orders && orders.length > 0 ? (
+          <div className="table-responsive">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Date</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.slice(0, 5).map((order) => (
+                  <tr key={order._id}>
+                    <td>{order._id.slice(-8)}</td>
+                    <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+                    <td>₹{order.totalAmount?.toFixed(2)}</td>
+                    <td>
+                      <span className="badge bg-secondary text-uppercase">
+                        {order.status}
+                      </span>
+                    </td>
+                    <td>
+                      <Link
+                        to={`/orders/${order._id}`}
+                        className="btn btn-sm btn-outline-primary"
+                      >
+                        View
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-muted">No orders yet. Start shopping!</p>
+        )}
+      </div>
     </div>
   );
 };
