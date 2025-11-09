@@ -6,16 +6,19 @@ const Home = () => {
   return (
     <div>
       {/* Hero Section */}
-      <section className="bg-primary text-white py-5">
+      <section
+        className="bg-primary text-white py-5"
+        style={{ minHeight: "500px" }}
+      >
         <Container>
           <Row className="align-items-center py-5">
             <Col lg={6}>
               <h1 className="display-4 fw-bold mb-3">
-                Welcome to Tail Waggers
+                Welcome to Tail Waggers 🐾
               </h1>
               <p className="lead mb-4">
                 Your trusted partner for pet adoption, healthcare, and supplies.
-                Find your perfect companion today!
+                Find your perfect companion and give them a forever home today!
               </p>
               <div className="d-flex gap-3">
                 <Button as={Link} to="/pets" variant="light" size="lg">
