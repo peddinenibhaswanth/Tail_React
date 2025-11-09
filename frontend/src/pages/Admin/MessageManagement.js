@@ -9,7 +9,12 @@ const MessageManagement = () => {
   return (
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Contact Messages</h2>
+        <div>
+          <h2 className="mb-1">Contact Messages</h2>
+          <p className="text-muted mb-0">
+            View and respond to customer inquiries
+          </p>
+        </div>
       </div>
 
       <Card className="mb-4">

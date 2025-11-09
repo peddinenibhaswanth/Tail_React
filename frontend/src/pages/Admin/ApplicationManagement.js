@@ -9,7 +9,12 @@ const ApplicationManagement = () => {
   return (
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Adoption Applications</h2>
+        <div>
+          <h2 className="mb-1">Adoption Applications</h2>
+          <p className="text-muted mb-0">
+            Review and manage pet adoption requests
+          </p>
+        </div>
       </div>
 
       <Card className="mb-4">

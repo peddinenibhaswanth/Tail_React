@@ -9,7 +9,12 @@ const UserManagement = () => {
   return (
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>User Management</h2>
+        <div>
+          <h2 className="mb-1">User Management</h2>
+          <p className="text-muted mb-0">
+            Manage user accounts and permissions
+          </p>
+        </div>
       </div>
 
       <Card className="mb-4">
