@@ -5,6 +5,7 @@ import AppRoutes from "./routes";
 import Navbar from "./components/common/Navbar";
 import Footer from "./components/common/Footer";
 import Alert from "./components/common/Alert";
+import ErrorBoundary from "./components/common/ErrorBoundary";
 import { getCart } from "./redux/slices/cartSlice";
 import useAuth from "./hooks/useAuth";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -22,16 +23,18 @@ function App() {
   }, [dispatch, isAuthenticated]);
 
   return (
-    <Router>
-      <div className="App d-flex flex-column min-vh-100">
-        <Navbar />
-        <Alert />
-        <main className="flex-grow-1">
-          <AppRoutes />
-        </main>
-        <Footer />
-      </div>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <div className="App d-flex flex-column min-vh-100">
+          <Navbar />
+          <Alert />
+          <main className="flex-grow-1" role="main">
+            <AppRoutes />
+          </main>
+          <Footer />
+        </div>
+      </Router>
+    </ErrorBoundary>
   );
 }
 
