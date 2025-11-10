@@ -88,35 +88,50 @@ const CheckoutPage = () => {
                 <h5 className="card-title">Shipping Information</h5>
                 <div className="row g-3">
                   <div className="col-md-12">
-                    <label className="form-label">Full Name *</label>
+                    <label htmlFor="fullName" className="form-label">
+                      Full Name *
+                    </label>
                     <input
                       type="text"
                       className="form-control"
+                      id="fullName"
                       name="fullName"
                       value={shippingInfo.fullName}
                       onChange={handleChange}
+                      placeholder="John Doe"
+                      aria-required="true"
                       required
                     />
                   </div>
                   <div className="col-md-12">
-                    <label className="form-label">Address *</label>
+                    <label htmlFor="address" className="form-label">
+                      Address *
+                    </label>
                     <textarea
                       className="form-control"
+                      id="address"
                       rows="2"
                       name="address"
                       value={shippingInfo.address}
                       onChange={handleChange}
+                      placeholder="123 Main Street, Apt 4B"
+                      aria-required="true"
                       required
                     />
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label">City *</label>
+                    <label htmlFor="city" className="form-label">
+                      City *
+                    </label>
                     <input
                       type="text"
                       className="form-control"
+                      id="city"
                       name="city"
                       value={shippingInfo.city}
                       onChange={handleChange}
+                      placeholder="New York"
+                      aria-required="true"
                       required
                     />
                   </div>
