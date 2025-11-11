@@ -35,14 +35,19 @@ const OrderList = () => {
 
   if (!orders || orders.length === 0) {
     return (
-      <div className="container py-5 text-center">
-        <h3 className="mb-3">You have no orders yet</h3>
-        <p className="text-muted mb-4">
-          Browse our products and place your first order.
-        </p>
-        <Link to="/products" className="btn btn-primary">
-          Shop Products
-        </Link>
+      <div className="container py-5">
+        <div className="text-center py-5">
+          <div className="mb-4">
+            <i className="bi bi-bag-x display-1 text-muted"></i>
+          </div>
+          <h3 className="mb-3">You have no orders yet</h3>
+          <p className="text-muted mb-4">
+            Browse our products and place your first order.
+          </p>
+          <Link to="/products" className="btn btn-primary btn-lg">
+            <i className="bi bi-shop me-2"></i>Shop Products
+          </Link>
+        </div>
       </div>
     );
   }
@@ -51,26 +56,40 @@ const OrderList = () => {
     <div className="container py-4">
       <h2 className="mb-4">My Orders</h2>
       <div className="table-responsive">
-        <table className="table align-middle">
-          <thead>
+        <table
+          className="table table-hover align-middle"
+          aria-label="Order history table"
+        >
+          <thead className="table-light">
             <tr>
-              <th>Order ID</th>
-              <th>Date</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Status</th>
-              <th></th>
+              <th scope="col">Order ID</th>
+              <th scope="col">Date</th>
+              <th scope="col">Items</th>
+              <th scope="col">Total</th>
+              <th scope="col">Status</th>
+              <th scope="col">
+                <span className="visually-hidden">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody>
             {orders.map((order) => (
               <tr key={order._id}>
-                <td>{order._id.slice(-8)}</td>
-                <td>{new Date(order.createdAt).toLocaleString()}</td>
                 <td>
-                  {order.items?.reduce((sum, i) => sum + i.quantity, 0) || 0}
+                  <code className="small">{order._id.slice(-8)}</code>
                 </td>
-                <td>₹{order.totalAmount?.toFixed(2)}</td>
+                <td className="text-nowrap">
+                  {new Date(order.createdAt).toLocaleDateString()}
+                </td>
+                <td>
+                  <span className="badge bg-light text-dark">
+                    {order.items?.reduce((sum, i) => sum + i.quantity, 0) || 0}{" "}
+                    item(s)
+                  </span>
+                </td>
+                <td className="fw-semibold">
+                  ₹{order.totalAmount?.toFixed(2)}
+                </td>
                 <td>
                   <span className="badge bg-secondary text-uppercase">
                     {order.status}
@@ -80,6 +99,7 @@ const OrderList = () => {
                   <Link
                     to={`/orders/${order._id}`}
                     className="btn btn-sm btn-outline-primary"
+                    aria-label={`View order ${order._id.slice(-8)}`}
                   >
                     View
                   </Link>

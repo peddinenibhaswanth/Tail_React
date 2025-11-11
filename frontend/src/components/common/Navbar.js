@@ -24,17 +24,21 @@ const Navbar = () => {
   };
 
   return (
-    <BootstrapNavbar bg="light" expand="lg" className="shadow-sm">
+    <BootstrapNavbar bg="light" expand="lg" className="shadow-sm sticky-top">
       <Container>
         <BootstrapNavbar.Brand
           as={Link}
           to="/"
-          className="fw-bold text-primary"
+          className="fw-bold text-primary d-flex align-items-center"
         >
-          🐾 Tail
+          <span className="fs-4">🐾</span>
+          <span className="ms-2">Tail Waggers</span>
         </BootstrapNavbar.Brand>
 
-        <BootstrapNavbar.Toggle aria-controls="basic-navbar-nav" />
+        <BootstrapNavbar.Toggle
+          aria-controls="basic-navbar-nav"
+          aria-label="Toggle navigation"
+        />
 
         <BootstrapNavbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
@@ -59,14 +63,15 @@ const Navbar = () => {
           </Nav>
 
           <Nav>
-            <Nav.Link as={Link} to="/cart" className="position-relative">
-              🛒 Cart
+            <Nav.Link
+              as={Link}
+              to="/cart"
+              className="position-relative d-flex align-items-center"
+              aria-label={`Shopping cart with ${itemCount} items`}
+            >
+              <span>🛒 Cart</span>
               {itemCount > 0 && (
-                <Badge
-                  bg="danger"
-                  pill
-                  className="position-absolute top-0 start-100 translate-middle"
-                >
+                <Badge bg="danger" pill className="ms-2">
                   {itemCount}
                 </Badge>
               )}
