@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const petController = require("../controllers/petController");
 const { isAuthenticated, isAdminOrCoAdmin } = require("../middleware/auth");
-const { petUpload } = require("../middleware/upload");
+const { uploadPetImages } = require("../middleware/upload");
 
 // Public routes
 router.get("/", petController.getAllPets);
@@ -16,14 +16,14 @@ router.post(
   "/",
   isAuthenticated,
   isAdminOrCoAdmin,
-  petUpload,
+  uploadPetImages,
   petController.createPet
 );
 router.put(
   "/:id",
   isAuthenticated,
   isAdminOrCoAdmin,
-  petUpload,
+  uploadPetImages,
   petController.updatePet
 );
 router.delete(

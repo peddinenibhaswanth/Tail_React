@@ -121,6 +121,10 @@ const isApproved = (req, res, next) => {
   });
 };
 
+// Aliases for backward compatibility
+const isAuthenticated = ensureAuthenticated;
+const isAdminOrCoAdmin = isAdmin;
+
 module.exports = {
   ensureAuthenticated,
   ensureGuest,
@@ -133,4 +137,6 @@ module.exports = {
   isCustomer,
   isAdminCoAdminOrSeller,
   isApproved,
+  isAuthenticated,
+  isAdminOrCoAdmin,
 };

@@ -316,6 +316,111 @@ exports.getFeaturedPets = async (req, res) => {
   }
 };
 
+// @desc    Search pets
+// @route   GET /api/pets/search
+// @access  Public
+exports.searchPets = async (req, res) => {
+  try {
+    const { q, species, breed, status = "available" } = req.query;
+
+    const query = { status };
+
+    if (q) {
+      query.$or = [
+        { name: new RegExp(q, "i") },
+        { breed: new RegExp(q, "i") },
+        { description: new RegExp(q, "i") },
+      ];
+    }
+    if (species) query.species = species;
+    if (breed) query.breed = new RegExp(breed, "i");
+
+    const pets = await Pet.find(query)
+      .populate("shelter", "name")
+      .sort("-createdAt")
+      .limit(20)
+      .lean();
+
+    res.json({
+      success: true,
+      data: pets,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error searching pets",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Get breeds by species type
+// @route   GET /api/pets/breeds
+// @access  Public
+exports.getBreedsByType = async (req, res) => {
+  try {
+    const { species } = req.query;
+
+    const query = species ? { species } : {};
+
+    const breeds = await Pet.distinct("breed", query);
+
+    res.json({
+      success: true,
+      data: breeds.filter((b) => b).sort(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching breeds",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Update adoption status
+// @route   PATCH /api/pets/:id/adoption-status
+// @access  Private (Admin/Co-Admin)
+exports.updateAdoptionStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    if (
+      !["available", "pending", "adopted", "not_available"].includes(status)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid adoption status value",
+      });
+    }
+
+    const pet = await Pet.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true, runValidators: true }
+    );
+
+    if (!pet) {
+      return res.status(404).json({
+        success: false,
+        message: "Pet not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Adoption status updated successfully",
+      data: pet,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "Error updating adoption status",
+      error: error.message,
+    });
+  }
+};
+
 // @desc    Get pet statistics
 // @route   GET /api/pets/stats
 // @access  Private (Admin/Co-Admin)

@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const productController = require("../controllers/productController");
 const { isAuthenticated, isSellerOrAdmin } = require("../middleware/auth");
-const { productUpload } = require("../middleware/upload");
+const { uploadProductImages } = require("../middleware/upload");
 
 // Public routes
 router.get("/", productController.getAllProducts);
@@ -17,14 +17,14 @@ router.post(
   "/",
   isAuthenticated,
   isSellerOrAdmin,
-  productUpload,
+  uploadProductImages,
   productController.createProduct
 );
 router.put(
   "/:id",
   isAuthenticated,
   isSellerOrAdmin,
-  productUpload,
+  uploadProductImages,
   productController.updateProduct
 );
 router.delete(
