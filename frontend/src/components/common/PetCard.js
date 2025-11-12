@@ -2,18 +2,11 @@ import React from "react";
 import { Card, Badge, Button } from "react-bootstrap";
 import { Link } from "react-router-dom";
 
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
+
 const PetCard = ({ pet }) => {
-  const {
-    _id,
-    name,
-    species,
-    breed,
-    age,
-    gender,
-    size,
-    image,
-    adoptionStatus,
-  } = pet;
+  const { _id, name, species, breed, age, gender, size, mainImage, status } =
+    pet;
 
   const getStatusVariant = (status) => {
     switch (status) {
@@ -28,22 +21,41 @@ const PetCard = ({ pet }) => {
     }
   };
 
+  // Format age display
+  const formatAge = (ageObj) => {
+    if (!ageObj) return "Unknown";
+    if (typeof ageObj === "object") {
+      return `${ageObj.value} ${ageObj.unit}`;
+    }
+    return ageObj;
+  };
+
+  // Get image URL
+  const getImageUrl = () => {
+    if (!mainImage) return "/images/default-pet.jpg";
+    if (mainImage.startsWith("http")) return mainImage;
+    return `${API_URL}/uploads/pets/${mainImage}`;
+  };
+
   return (
     <Card className="h-100 pet-card shadow-sm">
       <div className="position-relative">
         <Card.Img
           variant="top"
-          src={image || "/images/default-pet.jpg"}
+          src={getImageUrl()}
           alt={`${name}, a ${species} looking for adoption`}
           style={{ height: "250px", objectFit: "cover" }}
           loading="lazy"
+          onError={(e) => {
+            e.target.src = "/images/default-pet.jpg";
+          }}
         />
         <div className="position-absolute top-0 end-0 m-2">
           <Badge
-            bg={getStatusVariant(adoptionStatus)}
+            bg={getStatusVariant(status)}
             className="px-3 py-2 text-uppercase"
           >
-            {adoptionStatus}
+            {status || "available"}
           </Badge>
         </div>
       </div>
@@ -52,7 +64,7 @@ const PetCard = ({ pet }) => {
 
         <Card.Text className="text-muted mb-3">
           <i className="bi bi-tag me-1"></i>
-          {species} • {breed}
+          {species} {breed ? `• ${breed}` : ""}
         </Card.Text>
 
         <div className="mb-3 small">
@@ -60,7 +72,7 @@ const PetCard = ({ pet }) => {
             <span className="text-muted">
               <i className="bi bi-calendar3 me-1"></i>Age:
             </span>
-            <span className="fw-semibold">{age}</span>
+            <span className="fw-semibold">{formatAge(age)}</span>
           </div>
           <div className="d-flex justify-content-between mb-1">
             <span className="text-muted">

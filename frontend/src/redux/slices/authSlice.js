@@ -3,11 +3,10 @@ import * as authService from "../../api/authService";
 
 // Load user from localStorage
 const user = JSON.parse(localStorage.getItem("user"));
-const token = localStorage.getItem("token");
 
 const initialState = {
   user: user || null,
-  token: token || null,
+  isAuthenticated: !!user,
   isLoading: false,
   isSuccess: false,
   isError: false,
@@ -111,15 +110,15 @@ export const authSlice = createSlice({
       .addCase(register.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
+        state.isAuthenticated = true;
         state.user = action.payload.user;
-        state.token = action.payload.token;
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
         state.user = null;
-        state.token = null;
+        state.isAuthenticated = false;
       })
       // Login
       .addCase(login.pending, (state) => {
@@ -128,20 +127,20 @@ export const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
+        state.isAuthenticated = true;
         state.user = action.payload.user;
-        state.token = action.payload.token;
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
         state.user = null;
-        state.token = null;
+        state.isAuthenticated = false;
       })
       // Logout
       .addCase(logout.fulfilled, (state) => {
         state.user = null;
-        state.token = null;
+        state.isAuthenticated = false;
       })
       // Update Profile
       .addCase(updateProfile.pending, (state) => {

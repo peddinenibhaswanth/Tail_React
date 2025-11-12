@@ -123,7 +123,9 @@ export const cartSlice = createSlice({
       })
       .addCase(getCart.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.items = action.payload.items || [];
+        // Backend returns {success, data: {items, ...}}
+        const cartData = action.payload.data || action.payload;
+        state.items = cartData.items || [];
         cartSlice.caseReducers.calculateTotal(state);
       })
       .addCase(getCart.rejected, (state, action) => {
@@ -137,7 +139,8 @@ export const cartSlice = createSlice({
       })
       .addCase(addToCart.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.items = action.payload.items || [];
+        const cartData = action.payload.data || action.payload;
+        state.items = cartData.items || [];
         cartSlice.caseReducers.calculateTotal(state);
       })
       .addCase(addToCart.rejected, (state, action) => {
@@ -151,7 +154,8 @@ export const cartSlice = createSlice({
       })
       .addCase(updateCartItem.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.items = action.payload.items || [];
+        const cartData = action.payload.data || action.payload;
+        state.items = cartData.items || [];
         cartSlice.caseReducers.calculateTotal(state);
       })
       .addCase(updateCartItem.rejected, (state, action) => {
@@ -165,7 +169,8 @@ export const cartSlice = createSlice({
       })
       .addCase(removeFromCart.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.items = action.payload.items || [];
+        const cartData = action.payload.data || action.payload;
+        state.items = cartData.items || [];
         cartSlice.caseReducers.calculateTotal(state);
       })
       .addCase(removeFromCart.rejected, (state, action) => {

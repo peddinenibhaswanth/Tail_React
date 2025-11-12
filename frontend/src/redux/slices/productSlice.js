@@ -112,7 +112,8 @@ export const productSlice = createSlice({
       .addCase(getProducts.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.products = action.payload.products || [];
+        // Backend returns {success, data, pagination}
+        state.products = action.payload.data || action.payload.products || [];
         if (action.payload.pagination) {
           state.pagination = action.payload.pagination;
         }
@@ -129,7 +130,8 @@ export const productSlice = createSlice({
       .addCase(getProduct.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.product = action.payload;
+        // Backend returns {success, data}
+        state.product = action.payload.data || action.payload;
       })
       .addCase(getProduct.rejected, (state, action) => {
         state.isLoading = false;

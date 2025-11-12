@@ -102,7 +102,7 @@ export const appointmentSlice = createSlice({
       .addCase(createAppointment.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.appointment = action.payload;
+        state.appointment = action.payload.data || action.payload;
         state.message = "Appointment booked successfully!";
       })
       .addCase(createAppointment.rejected, (state, action) => {
@@ -117,7 +117,7 @@ export const appointmentSlice = createSlice({
       .addCase(getUserAppointments.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.appointments = action.payload;
+        state.appointments = action.payload.data || action.payload;
       })
       .addCase(getUserAppointments.rejected, (state, action) => {
         state.isLoading = false;
@@ -131,7 +131,7 @@ export const appointmentSlice = createSlice({
       .addCase(getAppointment.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.appointment = action.payload;
+        state.appointment = action.payload.data || action.payload;
       })
       .addCase(getAppointment.rejected, (state, action) => {
         state.isLoading = false;
@@ -145,7 +145,7 @@ export const appointmentSlice = createSlice({
       .addCase(cancelAppointment.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.appointment = action.payload;
+        state.appointment = action.payload.data || action.payload;
         state.message = "Appointment cancelled successfully!";
       })
       .addCase(cancelAppointment.rejected, (state, action) => {

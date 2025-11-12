@@ -3,8 +3,7 @@ import axios from "./axios";
 // Register user
 export const register = async (userData) => {
   const response = await axios.post("/api/auth/register", userData);
-  if (response.data.token) {
-    localStorage.setItem("token", response.data.token);
+  if (response.data.success && response.data.user) {
     localStorage.setItem("user", JSON.stringify(response.data.user));
   }
   return response.data;
@@ -13,17 +12,26 @@ export const register = async (userData) => {
 // Login user
 export const login = async (userData) => {
   const response = await axios.post("/api/auth/login", userData);
-  if (response.data.token) {
-    localStorage.setItem("token", response.data.token);
+  if (response.data.success && response.data.user) {
     localStorage.setItem("user", JSON.stringify(response.data.user));
   }
   return response.data;
 };
 
 // Logout user
-export const logout = () => {
-  localStorage.removeItem("token");
+export const logout = async () => {
+  try {
+    await axios.post("/api/auth/logout");
+  } catch (error) {
+    console.error("Logout error:", error);
+  }
   localStorage.removeItem("user");
+};
+
+// Get current user (check session)
+export const getCurrentUser = async () => {
+  const response = await axios.get("/api/auth/current");
+  return response.data;
 };
 
 // Get current user profile

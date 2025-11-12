@@ -102,7 +102,7 @@ export const orderSlice = createSlice({
       .addCase(createOrder.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.order = action.payload;
+        state.order = action.payload.data || action.payload;
         state.message = "Order placed successfully!";
       })
       .addCase(createOrder.rejected, (state, action) => {
@@ -117,7 +117,7 @@ export const orderSlice = createSlice({
       .addCase(getUserOrders.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.orders = action.payload;
+        state.orders = action.payload.data || action.payload;
       })
       .addCase(getUserOrders.rejected, (state, action) => {
         state.isLoading = false;
@@ -131,7 +131,7 @@ export const orderSlice = createSlice({
       .addCase(getOrder.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.order = action.payload;
+        state.order = action.payload.data || action.payload;
       })
       .addCase(getOrder.rejected, (state, action) => {
         state.isLoading = false;
@@ -145,7 +145,7 @@ export const orderSlice = createSlice({
       .addCase(cancelOrder.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.order = action.payload;
+        state.order = action.payload.data || action.payload;
         state.message = "Order cancelled successfully!";
       })
       .addCase(cancelOrder.rejected, (state, action) => {

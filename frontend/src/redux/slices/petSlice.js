@@ -163,7 +163,8 @@ export const petSlice = createSlice({
       .addCase(getPets.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.pets = action.payload.pets || [];
+        // Backend returns {success, data, pagination}
+        state.pets = action.payload.data || action.payload.pets || [];
         if (action.payload.pagination) {
           state.pagination = action.payload.pagination;
         }
@@ -180,7 +181,8 @@ export const petSlice = createSlice({
       .addCase(getPet.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.pet = action.payload;
+        // Backend returns {success, data}
+        state.pet = action.payload.data || action.payload;
       })
       .addCase(getPet.rejected, (state, action) => {
         state.isLoading = false;
