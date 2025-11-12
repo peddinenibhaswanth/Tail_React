@@ -61,21 +61,21 @@ export const isValidFutureDate = (date) => {
 
 // Input sanitization
 export const sanitizeInput = (input) => {
-  if (typeof input !== 'string') return input;
+  if (typeof input !== "string") return input;
   // Remove leading/trailing whitespace
   return input.trim();
 };
 
 export const sanitizeHTML = (html) => {
-  if (typeof html !== 'string') return html;
+  if (typeof html !== "string") return html;
   // Basic HTML escape to prevent XSS
   return html
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/\//g, '&#x2F;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;")
+    .replace(/\//g, "&#x2F;");
 };
 
 // Form validation helper

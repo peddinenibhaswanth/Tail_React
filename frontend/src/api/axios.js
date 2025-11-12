@@ -28,20 +28,48 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response) {
-      // Handle 401 Unauthorized - Clear storage and redirect to login
-      if (error.response.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+    // Handle network errors
+    if (!error.response) {
+      console.error("Network error:", error.message);
+      return Promise.reject({
+        message: "Network error. Please check your connection.",
+        isNetworkError: true,
+      });
+    }
+
+    const { status, data } = error.response;
+
+    // Handle 401 Unauthorized - Clear storage and redirect to login
+    if (status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      // Only redirect if not already on login page
+      if (window.location.pathname !== "/login") {
         window.location.href = "/login";
       }
-
-      // Handle 403 Forbidden
-      if (error.response.status === 403) {
-        console.error("Access denied");
-      }
     }
-    return Promise.reject(error);
+
+    // Handle 403 Forbidden
+    if (status === 403) {
+      console.error("Access denied - Insufficient permissions");
+    }
+
+    // Handle 404 Not Found
+    if (status === 404) {
+      console.error("Resource not found");
+    }
+
+    // Handle 500 Server Error
+    if (status >= 500) {
+      console.error("Server error - Please try again later");
+    }
+
+    // Return standardized error
+    return Promise.reject({
+      message: data?.message || error.message || "An error occurred",
+      status,
+      data,
+    });
   }
 );
 
