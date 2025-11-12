@@ -27,3 +27,15 @@ coverage/
 
 # Misc
 *.swp
+
+# Debug & Testing Scripts
+check_pet_statuses.js
+diagnose_pets.js
+verify_fixes.js
+seed_buddy.js
+list_collections.js
+simulate_advanced_revenue.js
+promote_admin.js
+
+# Competitive Programming
+scripts/.cph/
