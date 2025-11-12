@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Form, Button, InputGroup } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
-import { getPets, reset } from "../../redux/slices/petSlice";
+import { getPets, resetPets } from "../../redux/slices/petSlice";
 import PetCard from "../../components/common/PetCard";
 import Loading from "../../components/common/Loading";
 import { PET_SPECIES, PET_SIZES, ADOPTION_STATUS } from "../../utils/constants";
@@ -24,7 +24,7 @@ const PetList = () => {
 
   useEffect(() => {
     dispatch(getPets(filters));
-    return () => dispatch(reset());
+    return () => dispatch(resetPets());
   }, [dispatch, filters]);
 
   const handleFilterChange = (e) => {

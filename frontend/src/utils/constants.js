@@ -11,6 +11,13 @@ export const PET_SIZES = ["Small", "Medium", "Large"];
 export const PET_GENDERS = ["Male", "Female"];
 export const PET_AGE_RANGES = ["Puppy/Kitten", "Young", "Adult", "Senior"];
 
+// Adoption Status
+export const ADOPTION_STATUS = {
+  AVAILABLE: "available",
+  PENDING: "pending",
+  ADOPTED: "adopted",
+};
+
 // Product Categories
 export const PRODUCT_CATEGORIES = [
   "Food",

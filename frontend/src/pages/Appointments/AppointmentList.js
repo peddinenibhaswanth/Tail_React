@@ -11,9 +11,8 @@ import {
 } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  getAllAppointments,
-  updateAppointmentStatus,
-  reset,
+  getUserAppointments,
+  resetAppointments,
 } from "../../redux/slices/appointmentSlice";
 import Loading from "../../components/common/Loading";
 import { formatDate } from "../../utils/formatters";
@@ -31,9 +30,9 @@ const AppointmentList = () => {
   });
 
   useEffect(() => {
-    dispatch(getAllAppointments(filter));
-    return () => dispatch(reset());
-  }, [dispatch, filter]);
+    dispatch(getUserAppointments());
+    return () => dispatch(resetAppointments());
+  }, [dispatch]);
 
   const getStatusVariant = (status) => {
     switch (status?.toLowerCase()) {
@@ -51,7 +50,8 @@ const AppointmentList = () => {
   };
 
   const handleStatusChange = (appointmentId, newStatus) => {
-    dispatch(updateAppointmentStatus({ id: appointmentId, status: newStatus }));
+    // TODO: Implement status update API
+    console.log("Status change:", appointmentId, newStatus);
   };
 
   const handleFilterChange = (e) => {

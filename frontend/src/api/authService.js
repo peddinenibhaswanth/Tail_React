@@ -50,3 +50,9 @@ export const uploadProfileImage = async (formData) => {
   });
   return response.data;
 };
+
+// Change password
+export const changePassword = async (passwordData) => {
+  const response = await axios.put("/api/auth/change-password", passwordData);
+  return response.data;
+};

@@ -7,9 +7,9 @@ import Register from "../pages/Auth/Register";
 import ForgotPassword from "../pages/Auth/ForgotPassword";
 
 // Public Pages
-import Home from "../pages/Home/Home";
-import About from "../pages/About/About";
-import Contact from "../pages/Contact/Contact";
+import Home from "../pages/Home";
+import About from "../pages/About";
+import Contact from "../pages/Contact";
 
 // Pet Pages
 import PetList from "../pages/Pets/PetList";
@@ -29,22 +29,23 @@ import OrderList from "../pages/Orders/OrderList";
 import OrderDetail from "../pages/Orders/OrderDetail";
 
 // Appointments
-import AppointmentBooking from "../pages/Appointments/AppointmentBooking";
+import BookAppointment from "../pages/Appointments/BookAppointment";
 import AppointmentList from "../pages/Appointments/AppointmentList";
+import MyAppointments from "../pages/Appointments/MyAppointments";
 
 // Dashboard
-import UserDashboard from "../pages/Dashboard/UserDashboard";
-import Profile from "../pages/Dashboard/Profile";
-import MyApplications from "../pages/Dashboard/MyApplications";
+import CustomerDashboard from "../pages/Dashboard/CustomerDashboard";
+import SellerDashboard from "../pages/Dashboard/SellerDashboard";
+import VetDashboard from "../pages/Dashboard/VetDashboard";
+import Profile from "../pages/Auth/Profile";
 
 // Admin Pages
 import AdminDashboard from "../pages/Admin/AdminDashboard";
-import ManagePets from "../pages/Admin/ManagePets";
-import ManageProducts from "../pages/Admin/ManageProducts";
-import ManageOrders from "../pages/Admin/ManageOrders";
-import ManageAppointments from "../pages/Admin/ManageAppointments";
-import ManageApplications from "../pages/Admin/ManageApplications";
-import ManageUsers from "../pages/Admin/ManageUsers";
+import PetManagement from "../pages/Admin/PetManagement";
+import ProductManagement from "../pages/Admin/ProductManagement";
+import UserManagement from "../pages/Admin/UserManagement";
+import ApplicationManagement from "../pages/Admin/ApplicationManagement";
+import MessageManagement from "../pages/Admin/MessageManagement";
 
 // Components
 import ProtectedRoute from "../components/common/ProtectedRoute";
@@ -80,22 +81,23 @@ const AppRoutes = () => {
         <Route path="/order-success/:id" element={<OrderSuccess />} />
         <Route path="/orders" element={<OrderList />} />
         <Route path="/orders/:id" element={<OrderDetail />} />
-        <Route path="/appointments/book" element={<AppointmentBooking />} />
+        <Route path="/appointments/book" element={<BookAppointment />} />
         <Route path="/appointments" element={<AppointmentList />} />
-        <Route path="/dashboard" element={<UserDashboard />} />
+        <Route path="/my-appointments" element={<MyAppointments />} />
+        <Route path="/dashboard" element={<CustomerDashboard />} />
+        <Route path="/seller-dashboard" element={<SellerDashboard />} />
+        <Route path="/vet-dashboard" element={<VetDashboard />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/my-applications" element={<MyApplications />} />
       </Route>
 
       {/* Admin Routes */}
       <Route element={<RoleRoute allowedRoles={["admin", "co-admin"]} />}>
         <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/pets" element={<ManagePets />} />
-        <Route path="/admin/products" element={<ManageProducts />} />
-        <Route path="/admin/orders" element={<ManageOrders />} />
-        <Route path="/admin/appointments" element={<ManageAppointments />} />
-        <Route path="/admin/applications" element={<ManageApplications />} />
-        <Route path="/admin/users" element={<ManageUsers />} />
+        <Route path="/admin/pets" element={<PetManagement />} />
+        <Route path="/admin/products" element={<ProductManagement />} />
+        <Route path="/admin/users" element={<UserManagement />} />
+        <Route path="/admin/applications" element={<ApplicationManagement />} />
+        <Route path="/admin/messages" element={<MessageManagement />} />
       </Route>
 
       {/* 404 */}

@@ -11,9 +11,9 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  getMyAppointments,
+  getUserAppointments,
   cancelAppointment,
-  reset,
+  resetAppointments,
 } from "../../redux/slices/appointmentSlice";
 import Loading from "../../components/common/Loading";
 import { formatDate, formatDateTime } from "../../utils/formatters";
@@ -26,8 +26,8 @@ const MyAppointments = () => {
   );
 
   useEffect(() => {
-    dispatch(getMyAppointments());
-    return () => dispatch(reset());
+    dispatch(getUserAppointments());
+    return () => dispatch(resetAppointments());
   }, [dispatch]);
 
   const getStatusVariant = (status) => {

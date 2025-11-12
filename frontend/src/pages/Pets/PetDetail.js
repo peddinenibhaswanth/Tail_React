@@ -10,8 +10,8 @@ import {
 } from "react-bootstrap";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { getPetById, reset } from "../../redux/slices/petSlice";
-import { useAuth } from "../../hooks/useAuth";
+import { getPet, resetPets } from "../../redux/slices/petSlice";
+import useAuth from "../../hooks/useAuth";
 import Loading from "../../components/common/Loading";
 import { formatDate } from "../../utils/formatters";
 
@@ -20,15 +20,18 @@ const PetDetail = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { isAuthenticated } = useAuth();
-  const { currentPet, isLoading, isError, message } = useSelector(
-    (state) => state.pets
-  );
+  const {
+    pet: currentPet,
+    isLoading,
+    isError,
+    message,
+  } = useSelector((state) => state.pets);
 
   useEffect(() => {
     if (id) {
-      dispatch(getPetById(id));
+      dispatch(getPet(id));
     }
-    return () => dispatch(reset());
+    return () => dispatch(resetPets());
   }, [dispatch, id]);
 
   const getStatusVariant = (status) => {

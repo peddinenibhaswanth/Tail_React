@@ -10,9 +10,9 @@ import {
 } from "react-bootstrap";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { getPetById } from "../../redux/slices/petSlice";
+import { getPet } from "../../redux/slices/petSlice";
 import axios from "../../api/axios";
-import { useAuth } from "../../hooks/useAuth";
+import useAuth from "../../hooks/useAuth";
 import Loading from "../../components/common/Loading";
 
 const AdoptionApplication = () => {
@@ -20,7 +20,7 @@ const AdoptionApplication = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useAuth();
-  const { currentPet, isLoading } = useSelector((state) => state.pets);
+  const { pet: currentPet, isLoading } = useSelector((state) => state.pets);
 
   const [formData, setFormData] = useState({
     housingType: "",
@@ -39,7 +39,7 @@ const AdoptionApplication = () => {
 
   useEffect(() => {
     if (id) {
-      dispatch(getPetById(id));
+      dispatch(getPet(id));
     }
   }, [dispatch, id]);
 

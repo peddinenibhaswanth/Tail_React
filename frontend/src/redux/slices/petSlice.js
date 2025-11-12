@@ -73,6 +73,60 @@ export const applyForAdoption = createAsyncThunk(
   }
 );
 
+// Create pet (Admin)
+export const createPet = createAsyncThunk(
+  "pets/createPet",
+  async (petData, thunkAPI) => {
+    try {
+      return await petService.createPet(petData);
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
+// Update pet (Admin)
+export const updatePet = createAsyncThunk(
+  "pets/updatePet",
+  async ({ id, petData }, thunkAPI) => {
+    try {
+      return await petService.updatePet(id, petData);
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
+// Delete pet (Admin)
+export const deletePet = createAsyncThunk(
+  "pets/deletePet",
+  async (id, thunkAPI) => {
+    try {
+      return await petService.deletePet(id);
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
 export const petSlice = createSlice({
   name: "pets",
   initialState,
@@ -143,6 +197,54 @@ export const petSlice = createSlice({
         state.message = "Application submitted successfully!";
       })
       .addCase(applyForAdoption.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
+      })
+      // Create pet
+      .addCase(createPet.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(createPet.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.pets.push(action.payload);
+        state.message = "Pet created successfully!";
+      })
+      .addCase(createPet.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
+      })
+      // Update pet
+      .addCase(updatePet.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(updatePet.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.pet = action.payload;
+        state.pets = state.pets.map((p) =>
+          p._id === action.payload._id ? action.payload : p
+        );
+        state.message = "Pet updated successfully!";
+      })
+      .addCase(updatePet.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
+      })
+      // Delete pet
+      .addCase(deletePet.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(deletePet.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.pets = state.pets.filter((p) => p._id !== action.payload.id);
+        state.message = "Pet deleted successfully!";
+      })
+      .addCase(deletePet.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;

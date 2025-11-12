@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Form, Button, InputGroup } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
-import { getProducts, reset } from "../../redux/slices/productSlice";
+import { getProducts, resetProducts } from "../../redux/slices/productSlice";
 import ProductCard from "../../components/common/ProductCard";
 import Loading from "../../components/common/Loading";
 import { PRODUCT_CATEGORIES } from "../../utils/constants";
-import { useDebounce } from "../../hooks/useDebounce";
+import useDebounce from "../../hooks/useDebounce";
 
 const ProductList = () => {
   const dispatch = useDispatch();
@@ -27,7 +27,7 @@ const ProductList = () => {
   useEffect(() => {
     const queryFilters = { ...filters, search: debouncedSearch };
     dispatch(getProducts(queryFilters));
-    return () => dispatch(reset());
+    return () => dispatch(resetProducts());
   }, [
     dispatch,
     debouncedSearch,

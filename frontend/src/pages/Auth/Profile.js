@@ -11,7 +11,7 @@ import {
   Image,
 } from "react-bootstrap";
 import { useDispatch } from "react-redux";
-import { useAuth } from "../../hooks/useAuth";
+import useAuth from "../../hooks/useAuth";
 import {
   updateProfile,
   changePassword,

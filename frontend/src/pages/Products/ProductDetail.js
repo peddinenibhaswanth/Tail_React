@@ -11,9 +11,9 @@ import {
 } from "react-bootstrap";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { getProductById, reset } from "../../redux/slices/productSlice";
+import { getProduct, resetProducts } from "../../redux/slices/productSlice";
 import { addToCart } from "../../redux/slices/cartSlice";
-import { useAuth } from "../../hooks/useAuth";
+import useAuth from "../../hooks/useAuth";
 import Loading from "../../components/common/Loading";
 import { formatCurrency, formatDate } from "../../utils/formatters";
 
@@ -22,18 +22,21 @@ const ProductDetail = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { isAuthenticated } = useAuth();
-  const { currentProduct, isLoading, isError, message } = useSelector(
-    (state) => state.products
-  );
+  const {
+    product: currentProduct,
+    isLoading,
+    isError,
+    message,
+  } = useSelector((state) => state.products);
 
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
 
   useEffect(() => {
     if (id) {
-      dispatch(getProductById(id));
+      dispatch(getProduct(id));
     }
-    return () => dispatch(reset());
+    return () => dispatch(resetProducts());
   }, [dispatch, id]);
 
   const handleAddToCart = () => {

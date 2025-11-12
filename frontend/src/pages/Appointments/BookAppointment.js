@@ -10,8 +10,11 @@ import {
 } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { createAppointment, reset } from "../../redux/slices/appointmentSlice";
-import { useAuth } from "../../hooks/useAuth";
+import {
+  createAppointment,
+  resetAppointments,
+} from "../../redux/slices/appointmentSlice";
+import useAuth from "../../hooks/useAuth";
 import Loading from "../../components/common/Loading";
 import { formatDate } from "../../utils/formatters";
 
@@ -65,7 +68,7 @@ const BookAppointment = () => {
   }, [isSuccess, navigate]);
 
   useEffect(() => {
-    return () => dispatch(reset());
+    return () => dispatch(resetAppointments());
   }, [dispatch]);
 
   const handleChange = (e) => {
@@ -151,7 +154,7 @@ const BookAppointment = () => {
                 <Alert
                   variant="danger"
                   dismissible
-                  onClose={() => dispatch(reset())}
+                  onClose={() => dispatch(resetAppointments())}
                 >
                   {message}
                 </Alert>

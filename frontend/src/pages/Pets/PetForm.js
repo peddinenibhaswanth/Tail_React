@@ -11,10 +11,10 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  getPetById,
+  getPet,
   createPet,
   updatePet,
-  reset,
+  resetPets,
 } from "../../redux/slices/petSlice";
 import { PET_SPECIES, PET_SIZES } from "../../utils/constants";
 import Loading from "../../components/common/Loading";
@@ -23,9 +23,13 @@ const PetForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { currentPet, isLoading, isError, isSuccess, message } = useSelector(
-    (state) => state.pets
-  );
+  const {
+    pet: currentPet,
+    isLoading,
+    isError,
+    isSuccess,
+    message,
+  } = useSelector((state) => state.pets);
 
   const isEditMode = Boolean(id);
 
@@ -48,7 +52,7 @@ const PetForm = () => {
 
   useEffect(() => {
     if (isEditMode && id) {
-      dispatch(getPetById(id));
+      dispatch(getPet(id));
     }
   }, [dispatch, id, isEditMode]);
 
@@ -171,7 +175,7 @@ const PetForm = () => {
                 <Alert
                   variant="danger"
                   dismissible
-                  onClose={() => dispatch(reset())}
+                  onClose={() => dispatch(resetPets())}
                 >
                   {message}
                 </Alert>

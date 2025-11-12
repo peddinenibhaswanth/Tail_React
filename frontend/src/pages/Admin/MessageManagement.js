@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Container, Card, Table, Button, Form, Badge } from "react-bootstrap";
-import { useAuth } from "../../hooks/useAuth";
+import useAuth from "../../hooks/useAuth";
 
 const MessageManagement = () => {
   const { user } = useAuth();
