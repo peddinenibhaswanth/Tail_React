@@ -54,6 +54,10 @@ const userSchema = new mongoose.Schema({
     businessPhone: String,
     taxId: String,
     description: String,
+    commissionRate: {
+      type: Number,
+      default: 10, // Default 10%
+    },
   },
   vetInfo: {
     clinicName: String,
@@ -62,6 +66,10 @@ const userSchema = new mongoose.Schema({
     specialization: [String],
     experience: Number,
     consultationFee: Number,
+    commissionRate: {
+      type: Number,
+      default: 10, // Default 10%
+    },
     availableDays: [
       {
         type: String,
@@ -82,6 +90,10 @@ const userSchema = new mongoose.Schema({
         end: String,
       },
     ],
+  },
+  balance: {
+    type: Number,
+    default: 0, // Current payable balance for Sellers/Vets
   },
   createdAt: {
     type: Date,
