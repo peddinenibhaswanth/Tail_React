@@ -59,6 +59,25 @@ export const isValidFutureDate = (date) => {
   return selectedDate >= today;
 };
 
+// Input sanitization
+export const sanitizeInput = (input) => {
+  if (typeof input !== "string") return input;
+  // Remove leading/trailing whitespace
+  return input.trim();
+};
+
+export const sanitizeHTML = (html) => {
+  if (typeof html !== "string") return html;
+  // Basic HTML escape to prevent XSS
+  return html
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;")
+    .replace(/\//g, "&#x2F;");
+};
+
 // Form validation helper
 export const validateForm = (formData, rules) => {
   const errors = {};
@@ -85,6 +104,8 @@ export const validateForm = (formData, rules) => {
       errors[field] = `Minimum value is ${rule.min}`;
     } else if (rule.max && value > rule.max) {
       errors[field] = `Maximum value is ${rule.max}`;
+    } else if (rule.match && value !== formData[rule.match]) {
+      errors[field] = `${rule.label || field} does not match`;
     }
   });
 
