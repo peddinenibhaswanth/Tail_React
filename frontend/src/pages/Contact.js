@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Container,
   Row,
@@ -7,16 +7,44 @@ import {
   Button,
   Card,
   Alert,
+  Spinner,
 } from "react-bootstrap";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  sendContactMessage,
+  resetMessages,
+} from "../redux/slices/messageSlice";
+import useAuth from "../hooks/useAuth";
+import { Link } from "react-router-dom";
 
 const Contact = () => {
+  const dispatch = useDispatch();
+  const { user, isAuthenticated } = useAuth();
+  const { isLoading, isSuccess, isError, errorMessage } = useSelector(
+    (state) => state.messages
+  );
+
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
     subject: "",
     message: "",
   });
-  const [submitStatus, setSubmitStatus] = useState(null);
+
+  useEffect(() => {
+    // Reset message state when component mounts
+    dispatch(resetMessages());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (isSuccess) {
+      // Clear form on success
+      setFormData({ subject: "", message: "" });
+      // Reset success state after 5 seconds
+      const timer = setTimeout(() => {
+        dispatch(resetMessages());
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isSuccess, dispatch]);
 
   const handleChange = (e) => {
     setFormData({
@@ -27,12 +55,7 @@ const Contact = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // TODO: Connect to backend API to send message
-    setSubmitStatus("success");
-    setFormData({ name: "", email: "", subject: "", message: "" });
-
-    // Clear success message after 5 seconds
-    setTimeout(() => setSubmitStatus(null), 5000);
+    dispatch(sendContactMessage(formData));
   };
 
   return (
@@ -54,75 +77,96 @@ const Contact = () => {
             <Card.Body className="p-4">
               <h4 className="mb-4">Send us a Message</h4>
 
-              {submitStatus === "success" && (
-                <Alert
-                  variant="success"
-                  onClose={() => setSubmitStatus(null)}
-                  dismissible
-                >
-                  Thank you for your message! We'll get back to you soon.
+              {!isAuthenticated && (
+                <Alert variant="info">
+                  Please <Link to="/login">login</Link> to send us a message.
+                  We'll be able to respond to you directly in your dashboard.
                 </Alert>
               )}
 
-              <Form onSubmit={handleSubmit}>
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Name *</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="Your name"
-                        required
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Email *</Form.Label>
-                      <Form.Control
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        placeholder="your.email@example.com"
-                        required
-                      />
-                    </Form.Group>
-                  </Col>
-                </Row>
+              {isSuccess && (
+                <Alert
+                  variant="success"
+                  dismissible
+                  onClose={() => dispatch(resetMessages())}
+                >
+                  Thank you for your message! We'll get back to you soon. You
+                  can view our reply in your{" "}
+                  <Link to="/dashboard">dashboard</Link>.
+                </Alert>
+              )}
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Subject *</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleChange}
-                    placeholder="What is this regarding?"
-                    required
-                  />
-                </Form.Group>
+              {isError && (
+                <Alert
+                  variant="danger"
+                  dismissible
+                  onClose={() => dispatch(resetMessages())}
+                >
+                  {errorMessage || "An error occurred. Please try again."}
+                </Alert>
+              )}
 
-                <Form.Group className="mb-4">
-                  <Form.Label>Message *</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={5}
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    placeholder="Tell us more about your inquiry..."
-                    required
-                  />
-                </Form.Group>
+              {isAuthenticated ? (
+                <Form onSubmit={handleSubmit}>
+                  <div className="mb-3 p-3 bg-light rounded">
+                    <small className="text-muted">Sending as:</small>
+                    <div className="fw-bold">{user?.name}</div>
+                    <small className="text-muted">{user?.email}</small>
+                  </div>
 
-                <Button type="submit" variant="primary" size="lg">
-                  Send Message
-                </Button>
-              </Form>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Subject *</Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="subject"
+                      value={formData.subject}
+                      onChange={handleChange}
+                      placeholder="What is this regarding?"
+                      required
+                    />
+                  </Form.Group>
+
+                  <Form.Group className="mb-4">
+                    <Form.Label>Message *</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={5}
+                      name="message"
+                      value={formData.message}
+                      onChange={handleChange}
+                      placeholder="Tell us more about your inquiry..."
+                      required
+                    />
+                  </Form.Group>
+
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="lg"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Spinner size="sm" className="me-2" />
+                        Sending...
+                      </>
+                    ) : (
+                      "Send Message"
+                    )}
+                  </Button>
+                </Form>
+              ) : (
+                <div className="text-center py-4">
+                  <i className="bi bi-envelope fs-1 text-muted d-block mb-3"></i>
+                  <p className="text-muted">Login to send us a message</p>
+                  <Link to="/login" className="btn btn-primary me-2">
+                    Login
+                  </Link>
+                  <Link to="/register" className="btn btn-outline-primary">
+                    Register
+                  </Link>
+                </div>
+              )}
             </Card.Body>
           </Card>
         </Col>
