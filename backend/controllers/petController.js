@@ -24,12 +24,12 @@ exports.getAllPets = async (req, res) => {
     // Build query
     const query = {};
 
-    // Filters
-    if (species) query.species = species;
+    // Filters - convert to lowercase for case-insensitive matching
+    if (species) query.species = species.toLowerCase();
     if (breed) query.breed = new RegExp(breed, "i");
-    if (gender) query.gender = gender;
-    if (size) query.size = size;
-    if (status) query.status = status;
+    if (gender) query.gender = gender.toLowerCase();
+    if (size) query.size = size.toLowerCase();
+    if (status) query.status = status.toLowerCase();
     else query.status = "available"; // Default to available pets
     if (shelter) query.shelter = shelter;
 
@@ -118,10 +118,32 @@ exports.getPetById = async (req, res) => {
 // @access  Private (Admin/Co-Admin)
 exports.createPet = async (req, res) => {
   try {
+    // Parse the age field if it comes as nested from FormData
     const petData = {
       ...req.body,
       shelter: req.user._id,
     };
+
+    // Handle age if it comes as separate fields from FormData
+    if (req.body["age[value]"] && req.body["age[unit]"]) {
+      petData.age = {
+        value: parseInt(req.body["age[value]"]),
+        unit: req.body["age[unit]"],
+      };
+      delete petData["age[value]"];
+      delete petData["age[unit]"];
+    }
+
+    // Handle healthInfo if it comes as separate fields from FormData
+    if (req.body["healthInfo[vaccinated]"] !== undefined) {
+      petData.healthInfo = {
+        vaccinated: req.body["healthInfo[vaccinated]"] === "true",
+        specialNeedsDescription:
+          req.body["healthInfo[specialNeedsDescription]"] || "",
+      };
+      delete petData["healthInfo[vaccinated]"];
+      delete petData["healthInfo[specialNeedsDescription]"];
+    }
 
     // Handle image uploads
     if (req.files && req.files.length > 0) {
@@ -163,6 +185,30 @@ exports.updatePet = async (req, res) => {
         success: false,
         message: "Pet not found",
       });
+    }
+
+    // Parse the age field if it comes as nested from FormData
+    if (req.body["age[value]"] && req.body["age[unit]"]) {
+      req.body.age = {
+        value: parseInt(req.body["age[value]"]),
+        unit: req.body["age[unit]"],
+      };
+      delete req.body["age[value]"];
+      delete req.body["age[unit]"];
+    }
+
+    // Handle healthInfo if it comes as separate fields from FormData
+    if (req.body["healthInfo[vaccinated]"] !== undefined) {
+      req.body.healthInfo = {
+        ...pet.healthInfo,
+        vaccinated: req.body["healthInfo[vaccinated]"] === "true",
+        specialNeedsDescription:
+          req.body["healthInfo[specialNeedsDescription]"] ||
+          pet.healthInfo?.specialNeedsDescription ||
+          "",
+      };
+      delete req.body["healthInfo[vaccinated]"];
+      delete req.body["healthInfo[specialNeedsDescription]"];
     }
 
     // Handle new image uploads
