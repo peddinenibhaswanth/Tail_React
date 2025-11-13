@@ -20,7 +20,11 @@ connectDB();
 // Middleware
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3001",
+    origin: [
+      "http://localhost:3001",
+      "http://localhost:3002",
+      "http://localhost:3003",
+    ],
     credentials: true,
   })
 );
@@ -62,6 +66,7 @@ app.use("/api/orders", require("./routes/orderRoutes"));
 app.use("/api/appointments", require("./routes/appointmentRoutes"));
 app.use("/api/dashboard", require("./routes/dashboardRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
+app.use("/api/messages", require("./routes/messageRoutes"));
 app.use("/api", require("./routes/indexRoutes"));
 
 // Health check route
