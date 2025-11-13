@@ -66,9 +66,8 @@ const AdoptionApplication = () => {
       newErrors.experience = "Please describe your experience with pets";
     }
 
-    if (!formData.reason || formData.reason.length < 50) {
-      newErrors.reason =
-        "Please provide a detailed reason (at least 50 characters)";
+    if (!formData.reason) {
+      newErrors.reason = "Please provide a reason for adopting";
     }
 
     if (!formData.employmentStatus) {
@@ -266,12 +265,9 @@ const AdoptionApplication = () => {
                     name="reason"
                     value={formData.reason}
                     onChange={handleChange}
-                    placeholder="Please provide a detailed explanation (minimum 50 characters)..."
+                    placeholder="Tell us why you want to adopt this pet..."
                     isInvalid={!!errors.reason}
                   />
-                  <Form.Text className="text-muted">
-                    {formData.reason.length}/50 characters minimum
-                  </Form.Text>
                   <Form.Control.Feedback type="invalid">
                     {errors.reason}
                   </Form.Control.Feedback>
