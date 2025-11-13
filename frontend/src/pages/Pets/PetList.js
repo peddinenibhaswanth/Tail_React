@@ -1,10 +1,15 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Container, Row, Col, Form, Button, InputGroup } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
 import { getPets, resetPets } from "../../redux/slices/petSlice";
 import PetCard from "../../components/common/PetCard";
 import Loading from "../../components/common/Loading";
-import { PET_SPECIES, PET_SIZES, ADOPTION_STATUS } from "../../utils/constants";
+import {
+  PET_SPECIES,
+  PET_SIZES,
+  PET_GENDERS,
+  ADOPTION_STATUS,
+} from "../../utils/constants";
 
 const PetList = () => {
   const dispatch = useDispatch();
@@ -12,80 +17,70 @@ const PetList = () => {
     (state) => state.pets
   );
 
-  // Separate search input state from applied filters
-  const [searchInput, setSearchInput] = useState("");
   const [filters, setFilters] = useState({
     search: "",
     species: "",
     size: "",
     status: "available",
-    minAge: "",
-    maxAge: "",
     gender: "",
   });
 
-  // Ref for search input to maintain focus
-  const searchInputRef = useRef(null);
+  // Track if this is initial load - use ref to avoid re-renders
+  const initialLoadRef = useRef(true);
+  const [showInitialLoading, setShowInitialLoading] = useState(true);
 
   // Debounce timer ref
-  const debounceTimerRef = useRef(null);
+  const debounceRef = useRef(null);
 
-  // Fetch pets when filters change (not on every keystroke)
+  // Fetch pets when filters change
   useEffect(() => {
-    dispatch(getPets(filters));
-    return () => dispatch(resetPets());
+    // Clear existing timer
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    // Debounce the API call
+    debounceRef.current = setTimeout(() => {
+      dispatch(getPets(filters)).then(() => {
+        if (initialLoadRef.current) {
+          initialLoadRef.current = false;
+          setShowInitialLoading(false);
+        }
+      });
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
   }, [dispatch, filters]);
 
-  // Debounced search handler
-  const debouncedSearch = useCallback((value) => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-    debounceTimerRef.current = setTimeout(() => {
-      setFilters((prev) => ({ ...prev, search: value }));
-    }, 500); // 500ms debounce delay
-  }, []);
+  // Reset on unmount only
+  useEffect(() => {
+    return () => {
+      dispatch(resetPets());
+    };
+  }, [dispatch]);
 
-  // Handle search input change
-  const handleSearchChange = (e) => {
-    const value = e.target.value;
-    setSearchInput(value);
-    debouncedSearch(value);
-  };
-
-  // Handle other filter changes (immediate, no debounce needed for dropdowns)
+  // Handle filter changes
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    if (name === "search") {
-      handleSearchChange(e);
-    } else {
-      setFilters((prev) => ({ ...prev, [name]: value }));
-    }
+    setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleReset = () => {
-    setSearchInput("");
     setFilters({
       search: "",
       species: "",
       size: "",
       status: "available",
-      minAge: "",
-      maxAge: "",
       gender: "",
     });
   };
 
-  // Cleanup debounce timer on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, []);
-
-  if (isLoading) {
+  // Only show full loading screen on initial load
+  if (showInitialLoading && isLoading) {
     return <Loading />;
   }
 
@@ -103,11 +98,10 @@ const PetList = () => {
               <Form.Label>Search</Form.Label>
               <InputGroup>
                 <Form.Control
-                  ref={searchInputRef}
                   type="text"
                   name="search"
-                  value={searchInput}
-                  onChange={handleSearchChange}
+                  value={filters.search}
+                  onChange={handleFilterChange}
                   placeholder="Search by name or breed..."
                 />
               </InputGroup>
@@ -125,7 +119,7 @@ const PetList = () => {
                 <option value="">All Species</option>
                 {PET_SPECIES.map((species) => (
                   <option key={species} value={species}>
-                    {species}
+                    {species.charAt(0).toUpperCase() + species.slice(1)}
                   </option>
                 ))}
               </Form.Select>
@@ -143,7 +137,7 @@ const PetList = () => {
                 <option value="">All Sizes</option>
                 {PET_SIZES.map((size) => (
                   <option key={size} value={size}>
-                    {size}
+                    {size.charAt(0).toUpperCase() + size.slice(1)}
                   </option>
                 ))}
               </Form.Select>
@@ -159,8 +153,11 @@ const PetList = () => {
                 onChange={handleFilterChange}
               >
                 <option value="">All</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
+                {PET_GENDERS.map((gender) => (
+                  <option key={gender} value={gender}>
+                    {gender.charAt(0).toUpperCase() + gender.slice(1)}
+                  </option>
+                ))}
               </Form.Select>
             </Form.Group>
           </Col>
