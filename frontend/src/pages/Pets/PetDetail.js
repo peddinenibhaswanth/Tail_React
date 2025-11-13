@@ -15,6 +15,8 @@ import useAuth from "../../hooks/useAuth";
 import Loading from "../../components/common/Loading";
 import { formatDate } from "../../utils/formatters";
 
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
+
 const PetDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -45,6 +47,22 @@ const PetDetail = () => {
       default:
         return "info";
     }
+  };
+
+  // Format age display
+  const formatAge = (ageObj) => {
+    if (!ageObj) return "Unknown";
+    if (typeof ageObj === "object" && ageObj.value !== undefined) {
+      return `${ageObj.value} ${ageObj.unit || "months"}`;
+    }
+    return `${ageObj} years`;
+  };
+
+  // Get image URL
+  const getImageUrl = (img) => {
+    if (!img) return "/images/default-pet.jpg";
+    if (img.startsWith("http")) return img;
+    return `${API_URL}/uploads/pets/${img}`;
   };
 
   const handleAdoptClick = () => {
@@ -86,6 +104,7 @@ const PetDetail = () => {
   }
 
   const pet = currentPet;
+  const petStatus = pet.status || pet.adoptionStatus || "available";
 
   return (
     <Container className="py-4">
@@ -102,16 +121,19 @@ const PetDetail = () => {
           <Card className="border-0 shadow-sm">
             <Card.Img
               variant="top"
-              src={pet.images?.[0] || "/images/placeholder-pet.png"}
+              src={getImageUrl(pet.mainImage || pet.images?.[0])}
               alt={pet.name}
               style={{ height: "400px", objectFit: "cover" }}
+              onError={(e) => {
+                e.target.src = "/images/default-pet.jpg";
+              }}
             />
             {pet.images && pet.images.length > 1 && (
               <div className="d-flex gap-2 p-2">
                 {pet.images.slice(1, 5).map((img, idx) => (
                   <img
                     key={idx}
-                    src={img}
+                    src={getImageUrl(img)}
                     alt={`${pet.name} ${idx + 2}`}
                     className="rounded"
                     style={{
@@ -119,6 +141,9 @@ const PetDetail = () => {
                       height: "80px",
                       objectFit: "cover",
                       cursor: "pointer",
+                    }}
+                    onError={(e) => {
+                      e.target.src = "/images/default-pet.jpg";
                     }}
                   />
                 ))}
@@ -129,8 +154,8 @@ const PetDetail = () => {
 
         <Col lg={6}>
           <div className="mb-3">
-            <Badge bg={getStatusVariant(pet.adoptionStatus)} className="mb-2">
-              {pet.adoptionStatus?.toUpperCase()}
+            <Badge bg={getStatusVariant(petStatus)} className="mb-2">
+              {petStatus.toUpperCase()}
             </Badge>
             <h2 className="fw-bold mb-3">{pet.name}</h2>
             <p className="text-muted lead">{pet.breed}</p>
@@ -139,21 +164,19 @@ const PetDetail = () => {
           <ListGroup variant="flush" className="mb-4">
             <ListGroup.Item className="d-flex justify-content-between">
               <span className="fw-semibold">Species:</span>
-              <span>{pet.species}</span>
+              <span className="text-capitalize">{pet.species}</span>
             </ListGroup.Item>
             <ListGroup.Item className="d-flex justify-content-between">
               <span className="fw-semibold">Age:</span>
-              <span>
-                {pet.age} {pet.age === 1 ? "year" : "years"}
-              </span>
+              <span>{formatAge(pet.age)}</span>
             </ListGroup.Item>
             <ListGroup.Item className="d-flex justify-content-between">
               <span className="fw-semibold">Gender:</span>
-              <span>{pet.gender}</span>
+              <span className="text-capitalize">{pet.gender}</span>
             </ListGroup.Item>
             <ListGroup.Item className="d-flex justify-content-between">
               <span className="fw-semibold">Size:</span>
-              <span>{pet.size}</span>
+              <span className="text-capitalize">{pet.size}</span>
             </ListGroup.Item>
             <ListGroup.Item className="d-flex justify-content-between">
               <span className="fw-semibold">Color:</span>
@@ -161,7 +184,7 @@ const PetDetail = () => {
             </ListGroup.Item>
             <ListGroup.Item className="d-flex justify-content-between">
               <span className="fw-semibold">Vaccinated:</span>
-              <span>{pet.vaccinated ? "✓ Yes" : "✗ No"}</span>
+              <span>{pet.healthInfo?.vaccinated ? "✓ Yes" : "✗ No"}</span>
             </ListGroup.Item>
             <ListGroup.Item className="d-flex justify-content-between">
               <span className="fw-semibold">Available Since:</span>
@@ -178,16 +201,19 @@ const PetDetail = () => {
             </Card.Body>
           </Card>
 
-          {pet.medicalHistory && (
-            <Card className="bg-light border-0 mb-4">
-              <Card.Body>
-                <h5 className="fw-bold mb-2">Medical History</h5>
-                <p className="mb-0">{pet.medicalHistory}</p>
-              </Card.Body>
-            </Card>
-          )}
+          {pet.healthInfo?.specialNeeds &&
+            pet.healthInfo?.specialNeedsDescription && (
+              <Card className="bg-light border-0 mb-4">
+                <Card.Body>
+                  <h5 className="fw-bold mb-2">Special Needs</h5>
+                  <p className="mb-0">
+                    {pet.healthInfo.specialNeedsDescription}
+                  </p>
+                </Card.Body>
+              </Card>
+            )}
 
-          {pet.adoptionStatus === "available" && (
+          {petStatus === "available" && (
             <div className="d-grid gap-2">
               <Button variant="primary" size="lg" onClick={handleAdoptClick}>
                 Apply for Adoption
@@ -195,13 +221,13 @@ const PetDetail = () => {
             </div>
           )}
 
-          {pet.adoptionStatus === "pending" && (
+          {petStatus === "pending" && (
             <div className="alert alert-warning" role="alert">
               This pet has a pending adoption application
             </div>
           )}
 
-          {pet.adoptionStatus === "adopted" && (
+          {petStatus === "adopted" && (
             <div className="alert alert-info" role="alert">
               This pet has already been adopted
             </div>
