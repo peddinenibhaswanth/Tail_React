@@ -1,32 +1,89 @@
-import React from "react";
-import { Card, Badge, Button } from "react-bootstrap";
+import React, { useState } from "react";
+import { Card, Badge, Button, Alert } from "react-bootstrap";
 import { Link } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { addToCart } from "../../redux/slices/cartSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { addToCart, resetCart } from "../../redux/slices/cartSlice";
 import { formatCurrency } from "../../utils/formatters";
 import useAuth from "../../hooks/useAuth";
+
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
 
 const ProductCard = ({ product }) => {
   const dispatch = useDispatch();
   const { isAuthenticated } = useAuth();
-  const { _id, name, category, price, image, stock, rating, numReviews } =
-    product;
+  const { isLoading, isError, message } = useSelector((state) => state.cart);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertType, setAlertType] = useState("success");
+  const [alertMessage, setAlertMessage] = useState("");
 
-  const handleAddToCart = () => {
+  const {
+    _id,
+    name,
+    category,
+    price,
+    mainImage,
+    image,
+    stock,
+    rating,
+    numReviews,
+  } = product;
+
+  // Get image URL
+  const getImageUrl = () => {
+    const img = mainImage || image;
+    if (!img) return "/images/default-product.jpg";
+    if (img.startsWith("http")) return img;
+    return `${API_URL}/uploads/products/${img}`;
+  };
+
+  const handleAddToCart = async () => {
     if (isAuthenticated) {
-      dispatch(addToCart({ product: _id, quantity: 1 }));
+      try {
+        const result = await dispatch(
+          addToCart({ product: _id, quantity: 1 })
+        ).unwrap();
+        setAlertType("success");
+        setAlertMessage("Item added to cart!");
+        setShowAlert(true);
+        setTimeout(() => {
+          setShowAlert(false);
+          dispatch(resetCart());
+        }, 3000);
+      } catch (error) {
+        setAlertType("danger");
+        setAlertMessage(error || "Failed to add item to cart");
+        setShowAlert(true);
+        setTimeout(() => {
+          setShowAlert(false);
+          dispatch(resetCart());
+        }, 3000);
+      }
     }
   };
 
   return (
     <Card className="h-100 product-card shadow-sm">
+      {showAlert && (
+        <Alert
+          variant={alertType}
+          className="position-absolute w-100"
+          style={{ top: 0, zIndex: 10 }}
+          dismissible
+          onClose={() => setShowAlert(false)}
+        >
+          {alertMessage}
+        </Alert>
+      )}
       <div className="position-relative">
         <Card.Img
           variant="top"
-          src={image || "/images/default-product.jpg"}
+          src={getImageUrl()}
           alt={`${name} product image`}
           style={{ height: "250px", objectFit: "cover" }}
           loading="lazy"
+          onError={(e) => {
+            e.target.src = "/images/default-product.jpg";
+          }}
         />
         {stock === 0 && (
           <div className="position-absolute top-0 end-0 m-2">
@@ -78,13 +135,26 @@ const ProductCard = ({ product }) => {
             <Button
               variant="primary"
               onClick={handleAddToCart}
-              disabled={!isAuthenticated}
+              disabled={!isAuthenticated || isLoading}
               aria-label={`Add ${name} to cart`}
               title={
                 !isAuthenticated ? "Please login to add items to cart" : ""
               }
             >
-              <i className="bi bi-cart-plus me-2"></i>Add to Cart
+              {isLoading ? (
+                <>
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-cart-plus me-2"></i>Add to Cart
+                </>
+              )}
             </Button>
           )}
         </div>
