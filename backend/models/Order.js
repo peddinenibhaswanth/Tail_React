@@ -31,7 +31,6 @@ const orderSchema = new mongoose.Schema({
   orderNumber: {
     type: String,
     unique: true,
-    required: true,
   },
   customer: {
     type: mongoose.Schema.Types.ObjectId,
@@ -56,6 +55,14 @@ const orderSchema = new mongoose.Schema({
     required: true,
   },
   shippingAddress: {
+    fullName: {
+      type: String,
+      required: true,
+    },
+    phone: {
+      type: String,
+      required: true,
+    },
     street: {
       type: String,
       required: true,

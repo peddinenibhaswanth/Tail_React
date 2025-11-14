@@ -8,7 +8,8 @@ const Revenue = require("../models/Revenue");
 // @access  Private
 exports.createOrder = async (req, res) => {
   try {
-    const cart = await Cart.findOne({ user: req.user._id }).populate(
+    // Cart model uses 'customer' field
+    const cart = await Cart.findOne({ customer: req.user._id }).populate(
       "items.product"
     );
 
@@ -19,7 +20,7 @@ exports.createOrder = async (req, res) => {
       });
     }
 
-    // Validate stock and calculate totals
+    // Validate stock
     for (const item of cart.items) {
       if (!item.product) {
         return res.status(400).json({
@@ -36,52 +37,82 @@ exports.createOrder = async (req, res) => {
       }
     }
 
-    const { shippingAddress, paymentMethod, paymentDetails } = req.body;
+    const { shippingAddress, paymentMethod } = req.body;
 
-    if (
-      !shippingAddress ||
-      !shippingAddress.street ||
-      !shippingAddress.city ||
-      !shippingAddress.state ||
-      !shippingAddress.zipCode
-    ) {
+    // Validate shipping address
+    if (!shippingAddress) {
       return res.status(400).json({
         success: false,
-        message: "Complete shipping address is required",
+        message: "Shipping address is required",
       });
     }
 
-    // Create order items
+    const missingFields = [];
+    if (!shippingAddress.fullName) missingFields.push("full name");
+    if (!shippingAddress.phone) missingFields.push("phone number");
+    if (!shippingAddress.street) missingFields.push("street address");
+    if (!shippingAddress.city) missingFields.push("city");
+    if (!shippingAddress.state) missingFields.push("state");
+    if (!shippingAddress.zipCode) missingFields.push("PIN code");
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Please provide: ${missingFields.join(", ")}`,
+      });
+    }
+
+    // Set default country
+    if (!shippingAddress.country) {
+      shippingAddress.country = "India";
+    }
+
+    // Create order items matching Order model schema
     const orderItems = cart.items.map((item) => ({
       product: item.product._id,
-      name: item.product.name,
-      quantity: item.quantity,
-      price: item.price,
-      image: item.product.mainImage,
       seller: item.product.seller,
+      name: item.product.name,
+      price: item.price || item.product.price,
+      quantity: item.quantity,
+      image: item.product.mainImage || item.image,
     }));
 
     // Calculate pricing
-    const itemsPrice = orderItems.reduce(
+    const subtotal = orderItems.reduce(
       (acc, item) => acc + item.price * item.quantity,
       0
     );
-    const taxPrice = itemsPrice * 0.18; // 18% GST
-    const shippingPrice = itemsPrice > 1000 ? 0 : 50;
-    const totalPrice = itemsPrice + taxPrice + shippingPrice;
+    const tax = subtotal * 0.18; // 18% GST
+    const shipping = subtotal > 1000 ? 0 : 50;
+    const total = subtotal + tax + shipping;
 
-    // Create order
+    // Generate unique order number
+    const orderNumber = `ORD-${Date.now()}-${Math.random()
+      .toString(36)
+      .substr(2, 9)
+      .toUpperCase()}`;
+
+    // Create order - using correct field names from Order model
     const order = await Order.create({
-      user: req.user._id,
-      orderItems,
-      shippingAddress,
-      paymentMethod,
-      paymentDetails,
-      itemsPrice,
-      taxPrice,
-      shippingPrice,
-      totalPrice,
-      orderStatus: "pending",
+      orderNumber,
+      customer: req.user._id,
+      items: orderItems,
+      subtotal,
+      tax,
+      shipping,
+      total,
+      shippingAddress: {
+        fullName: shippingAddress.fullName.trim(),
+        phone: shippingAddress.phone.trim(),
+        street: shippingAddress.street,
+        city: shippingAddress.city,
+        state: shippingAddress.state,
+        zipCode: shippingAddress.zipCode,
+        country: shippingAddress.country || "India",
+      },
+      paymentMethod: paymentMethod || "cod",
+      status: "pending",
+      paymentStatus: "pending",
     });
 
     // Update product stock
@@ -97,9 +128,9 @@ exports.createOrder = async (req, res) => {
 
     // Populate order for response
     await order.populate([
-      { path: "user", select: "name email phoneNumber" },
-      { path: "orderItems.product", select: "name mainImage" },
-      { path: "orderItems.seller", select: "name sellerInfo.businessName" },
+      { path: "customer", select: "name email phoneNumber" },
+      { path: "items.product", select: "name mainImage" },
+      { path: "items.seller", select: "name sellerInfo.businessName" },
     ]);
 
     res.status(201).json({
@@ -108,26 +139,27 @@ exports.createOrder = async (req, res) => {
       data: order,
     });
   } catch (error) {
+    console.error("Order creation error:", error);
     res.status(400).json({
       success: false,
-      message: "Error creating order",
+      message: "Error creating order: " + error.message,
       error: error.message,
     });
   }
 };
 
 // @desc    Get all orders (customer's own orders)
-// @route   GET /api/orders
+// @route   GET /api/orders/my-orders
 // @access  Private
 exports.getMyOrders = async (req, res) => {
   try {
     const { page = 1, limit = 10, status } = req.query;
 
-    const query = { user: req.user._id };
-    if (status) query.orderStatus = status;
+    const query = { customer: req.user._id };
+    if (status) query.status = status;
 
     const orders = await Order.find(query)
-      .populate("orderItems.product", "name mainImage")
+      .populate("items.product", "name mainImage")
       .sort("-createdAt")
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -158,9 +190,9 @@ exports.getMyOrders = async (req, res) => {
 exports.getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
-      .populate("user", "name email phoneNumber")
-      .populate("orderItems.product", "name mainImage")
-      .populate("orderItems.seller", "name email sellerInfo");
+      .populate("customer", "name email phoneNumber")
+      .populate("items.product", "name mainImage")
+      .populate("items.seller", "name email sellerInfo");
 
     if (!order) {
       return res.status(404).json({
@@ -169,10 +201,10 @@ exports.getOrderById = async (req, res) => {
       });
     }
 
-    // Authorization check
+    // Authorization check - customer can only see their own orders
     if (
       req.user.role === "customer" &&
-      order.user._id.toString() !== req.user._id.toString()
+      order.customer._id.toString() !== req.user._id.toString()
     ) {
       return res.status(403).json({
         success: false,
@@ -180,9 +212,9 @@ exports.getOrderById = async (req, res) => {
       });
     }
 
-    // Seller can only see their own items
+    // Seller can only see orders containing their products
     if (req.user.role === "seller") {
-      const sellerItems = order.orderItems.filter(
+      const sellerItems = order.items.filter(
         (item) =>
           item.seller && item.seller._id.toString() === req.user._id.toString()
       );
@@ -193,9 +225,6 @@ exports.getOrderById = async (req, res) => {
           message: "Not authorized to view this order",
         });
       }
-
-      // Return order with only seller's items
-      order.orderItems = sellerItems;
     }
 
     res.json({
@@ -243,7 +272,7 @@ exports.updateOrderStatus = async (req, res) => {
 
     // Seller authorization
     if (req.user.role === "seller") {
-      const hasSellerItems = order.orderItems.some(
+      const hasSellerItems = order.items.some(
         (item) =>
           item.seller && item.seller.toString() === req.user._id.toString()
       );
@@ -257,31 +286,91 @@ exports.updateOrderStatus = async (req, res) => {
     }
 
     // Status transition validation
-    if (
-      order.orderStatus === "cancelled" ||
-      order.orderStatus === "delivered"
-    ) {
+    if (order.status === "cancelled" || order.status === "delivered") {
       return res.status(400).json({
         success: false,
-        message: `Cannot update ${order.orderStatus} order`,
+        message: `Cannot update ${order.status} order`,
       });
     }
 
-    order.orderStatus = status;
+    order.status = status;
 
     if (status === "delivered") {
-      order.deliveredAt = Date.now();
-      order.paymentStatus = "completed";
+      order.paymentStatus = "paid";
 
-      // Record revenue
-      await Revenue.create({
-        date: new Date(),
-        sales: {
-          productSales: order.itemsPrice,
-          count: order.orderItems.reduce((acc, item) => acc + item.quantity, 0),
-        },
-        totalRevenue: order.totalPrice,
-      });
+      // Record revenue for this order
+      try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const periodIdentifier = today.toISOString().split("T")[0]; // YYYY-MM-DD
+
+        // Find or create revenue record for today
+        let revenueRecord = await Revenue.findOne({
+          periodType: "daily",
+          periodIdentifier,
+        });
+
+        if (!revenueRecord) {
+          revenueRecord = new Revenue({
+            date: today,
+            periodType: "daily",
+            periodIdentifier,
+            productSales: {
+              totalOrders: 0,
+              totalRevenue: 0,
+              totalProfit: 0,
+              averageOrderValue: 0,
+            },
+            summary: {
+              totalRevenue: 0,
+              totalOrders: 0,
+              totalTransactions: 0,
+            },
+          });
+        }
+
+        // Update revenue with this order
+        revenueRecord.productSales.totalOrders += 1;
+        revenueRecord.productSales.totalRevenue += order.total;
+        revenueRecord.productSales.averageOrderValue =
+          revenueRecord.productSales.totalRevenue /
+          revenueRecord.productSales.totalOrders;
+
+        // Add seller metrics
+        for (const item of order.items) {
+          const sellerIndex = revenueRecord.sellerMetrics.findIndex(
+            (sm) => sm.seller && sm.seller.toString() === item.seller.toString()
+          );
+
+          const itemRevenue = item.price * item.quantity;
+
+          if (sellerIndex === -1) {
+            // Get seller info
+            const seller = await require("../models/User").findById(
+              item.seller
+            );
+            revenueRecord.sellerMetrics.push({
+              seller: item.seller,
+              name: seller?.name || "Unknown",
+              totalSales: item.quantity,
+              totalRevenue: itemRevenue,
+              commission: itemRevenue * 0.1, // 10% commission
+            });
+          } else {
+            revenueRecord.sellerMetrics[sellerIndex].totalSales +=
+              item.quantity;
+            revenueRecord.sellerMetrics[sellerIndex].totalRevenue +=
+              itemRevenue;
+            revenueRecord.sellerMetrics[sellerIndex].commission +=
+              itemRevenue * 0.1;
+          }
+        }
+
+        await revenueRecord.save();
+      } catch (revErr) {
+        console.error("Revenue recording error:", revErr);
+        // Don't fail the order update if revenue recording fails
+      }
     }
 
     await order.save();
@@ -307,13 +396,7 @@ exports.updatePaymentStatus = async (req, res) => {
   try {
     const { paymentStatus, transactionId } = req.body;
 
-    const validStatuses = [
-      "pending",
-      "processing",
-      "completed",
-      "failed",
-      "refunded",
-    ];
+    const validStatuses = ["pending", "paid", "failed", "refunded"];
     if (!validStatuses.includes(paymentStatus)) {
       return res.status(400).json({
         success: false,
@@ -336,8 +419,9 @@ exports.updatePaymentStatus = async (req, res) => {
       order.paymentDetails.transactionId = transactionId;
     }
 
-    if (paymentStatus === "completed") {
-      order.paidAt = Date.now();
+    if (paymentStatus === "paid") {
+      order.paymentDetails = order.paymentDetails || {};
+      order.paymentDetails.paidAt = Date.now();
     }
 
     await order.save();
@@ -373,7 +457,7 @@ exports.cancelOrder = async (req, res) => {
     // Customer can only cancel their own orders
     if (
       req.user.role === "customer" &&
-      order.user.toString() !== req.user._id.toString()
+      order.customer.toString() !== req.user._id.toString()
     ) {
       return res.status(403).json({
         success: false,
@@ -382,30 +466,25 @@ exports.cancelOrder = async (req, res) => {
     }
 
     // Cannot cancel delivered or already cancelled orders
-    if (
-      order.orderStatus === "delivered" ||
-      order.orderStatus === "cancelled"
-    ) {
+    if (order.status === "delivered" || order.status === "cancelled") {
       return res.status(400).json({
         success: false,
-        message: `Cannot cancel ${order.orderStatus} order`,
+        message: `Cannot cancel ${order.status} order`,
       });
     }
 
     // Customers can only cancel pending orders
-    if (req.user.role === "customer" && order.orderStatus !== "pending") {
+    if (req.user.role === "customer" && order.status !== "pending") {
       return res.status(400).json({
         success: false,
         message: "You can only cancel pending orders. Please contact support.",
       });
     }
 
-    order.orderStatus = "cancelled";
-    order.cancelledAt = Date.now();
-    order.cancelledBy = req.user._id;
+    order.status = "cancelled";
 
     // Restore product stock
-    for (const item of order.orderItems) {
+    for (const item of order.items) {
       await Product.findByIdAndUpdate(item.product, {
         $inc: { stock: item.quantity },
       });
@@ -435,33 +514,35 @@ exports.getSellerOrders = async (req, res) => {
     const { page = 1, limit = 10, status } = req.query;
 
     const matchStage = {
-      "orderItems.seller": req.user._id,
+      "items.seller": req.user._id,
     };
 
     if (status) {
-      matchStage.orderStatus = status;
+      matchStage.status = status;
     }
 
     const orders = await Order.find(matchStage)
-      .populate("user", "name email phoneNumber")
-      .populate("orderItems.product", "name mainImage")
+      .populate("customer", "name email phoneNumber")
+      .populate("items.product", "name mainImage")
       .sort("-createdAt")
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
     // Filter order items to show only seller's items
-    orders.forEach((order) => {
-      order.orderItems = order.orderItems.filter(
+    const filteredOrders = orders.map((order) => {
+      const orderObj = order.toObject();
+      orderObj.items = orderObj.items.filter(
         (item) =>
           item.seller && item.seller.toString() === req.user._id.toString()
       );
+      return orderObj;
     });
 
     const count = await Order.countDocuments(matchStage);
 
     res.json({
       success: true,
-      data: orders,
+      data: filteredOrders,
       pagination: {
         currentPage: parseInt(page),
         totalPages: Math.ceil(count / limit),
@@ -485,14 +566,14 @@ exports.getAllOrders = async (req, res) => {
     const { page = 1, limit = 10, status, user, seller } = req.query;
 
     const query = {};
-    if (status) query.orderStatus = status;
-    if (user) query.user = user;
-    if (seller) query["orderItems.seller"] = seller;
+    if (status) query.status = status;
+    if (user) query.customer = user;
+    if (seller) query["items.seller"] = seller;
 
     const orders = await Order.find(query)
-      .populate("user", "name email")
-      .populate("orderItems.product", "name")
-      .populate("orderItems.seller", "name sellerInfo.businessName")
+      .populate("customer", "name email")
+      .populate("items.product", "name")
+      .populate("items.seller", "name sellerInfo.businessName")
       .sort("-createdAt")
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -518,28 +599,28 @@ exports.getAllOrders = async (req, res) => {
 };
 
 // @desc    Get order statistics
-// @route   GET /api/orders/stats
+// @route   GET /api/orders/admin/stats
 // @access  Private (Admin/Seller)
 exports.getOrderStats = async (req, res) => {
   try {
     const matchStage =
-      req.user.role === "seller" ? { "orderItems.seller": req.user._id } : {};
+      req.user.role === "seller" ? { "items.seller": req.user._id } : {};
 
     const stats = await Order.aggregate([
       { $match: matchStage },
       {
         $group: {
-          _id: "$orderStatus",
+          _id: "$status",
           count: { $sum: 1 },
-          totalAmount: { $sum: "$totalPrice" },
+          totalAmount: { $sum: "$total" },
         },
       },
     ]);
 
     const totalOrders = await Order.countDocuments(matchStage);
     const totalRevenue = await Order.aggregate([
-      { $match: { ...matchStage, orderStatus: "delivered" } },
-      { $group: { _id: null, total: { $sum: "$totalPrice" } } },
+      { $match: { ...matchStage, status: "delivered" } },
+      { $group: { _id: null, total: { $sum: "$total" } } },
     ]);
 
     res.json({
