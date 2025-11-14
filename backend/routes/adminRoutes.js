@@ -14,11 +14,14 @@ const {
 // User management routes
 router.get("/users", isAuthenticated, isAdminOrCoAdmin, async (req, res) => {
   try {
-    const { page = 1, limit = 20, role, status, search } = req.query;
+    const { page = 1, limit = 20, role, status, search, approved } = req.query;
     const query = {};
 
     if (role) query.role = role;
     if (status) query.status = status;
+    if (approved !== undefined && approved !== "") {
+      query.isApproved = approved === "true";
+    }
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: "i" } },
@@ -44,13 +47,11 @@ router.get("/users", isAuthenticated, isAdminOrCoAdmin, async (req, res) => {
       },
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Error fetching users",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Error fetching users",
+      error: error.message,
+    });
   }
 });
 
@@ -68,13 +69,48 @@ router.get(
       }
       res.json({ success: true, data: user });
     } catch (error) {
-      res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error fetching user",
-          error: error.message,
-        });
+      res.status(500).json({
+        success: false,
+        message: "Error fetching user",
+        error: error.message,
+      });
+    }
+  }
+);
+
+router.put(
+  "/users/:id",
+  isAuthenticated,
+  isAdminOrCoAdmin,
+  async (req, res) => {
+    try {
+      const { name, email, phone, address, role, isApproved } = req.body;
+      const updateData = {};
+
+      if (name) updateData.name = name;
+      if (email) updateData.email = email;
+      if (phone) updateData.phone = phone;
+      if (address) updateData.address = address;
+      if (role && req.user.role === "admin") updateData.role = role;
+      if (isApproved !== undefined) updateData.isApproved = isApproved;
+
+      const user = await User.findByIdAndUpdate(req.params.id, updateData, {
+        new: true,
+      }).select("-password");
+
+      if (!user) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
+      }
+
+      res.json({ success: true, message: "User updated", data: user });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: "Error updating user",
+        error: error.message,
+      });
     }
   }
 );
@@ -100,34 +136,216 @@ router.patch(
 
       res.json({ success: true, message: "User status updated", data: user });
     } catch (error) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: "Error updating user status",
-          error: error.message,
-        });
+      res.status(400).json({
+        success: false,
+        message: "Error updating user status",
+        error: error.message,
+      });
     }
   }
 );
 
-router.delete("/users/:id", isAuthenticated, isAdmin, async (req, res) => {
+// Approve seller/veterinary account
+router.patch(
+  "/users/:id/approve",
+  isAuthenticated,
+  isAdminOrCoAdmin,
+  async (req, res) => {
+    try {
+      const user = await User.findById(req.params.id);
+
+      if (!user) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
+      }
+
+      if (!["seller", "veterinary"].includes(user.role)) {
+        return res.status(400).json({
+          success: false,
+          message: "Only seller and veterinary accounts can be approved",
+        });
+      }
+
+      user.isApproved = true;
+      await user.save();
+
+      res.json({
+        success: true,
+        message: `${user.role} account approved successfully`,
+        data: user,
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: "Error approving user",
+        error: error.message,
+      });
+    }
+  }
+);
+
+// Update user role (admin only)
+router.patch("/users/:id/role", isAuthenticated, isAdmin, async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const { role } = req.body;
+
+    if (!["customer", "seller", "veterinary", "co-admin"].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid role specified",
+      });
+    }
+
+    const user = await User.findById(req.params.id);
+
     if (!user) {
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
     }
+
+    if (user.role === "admin") {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot change admin role",
+      });
+    }
+
+    user.role = role;
+    // If changing to seller or veterinary, set isApproved to true
+    if (["seller", "veterinary"].includes(role)) {
+      user.isApproved = true;
+    }
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "User role updated successfully",
+      data: user,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "Error updating user role",
+      error: error.message,
+    });
+  }
+});
+
+router.delete("/users/:id", isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    if (user.role === "admin") {
+      return res
+        .status(400)
+        .json({ success: false, message: "Cannot delete admin account" });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: "User deleted successfully" });
   } catch (error) {
-    res
-      .status(500)
-      .json({
+    res.status(500).json({
+      success: false,
+      message: "Error deleting user",
+      error: error.message,
+    });
+  }
+});
+
+// Co-admin management (admin only)
+router.get("/co-admins", isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    const coAdmins = await User.find({ role: "co-admin" })
+      .select("-password")
+      .sort("-createdAt");
+
+    res.json({ success: true, data: coAdmins });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching co-admins",
+      error: error.message,
+    });
+  }
+});
+
+router.post("/co-admins", isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    const { name, email, password, phone } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
         success: false,
-        message: "Error deleting user",
-        error: error.message,
+        message: "User with this email already exists",
       });
+    }
+
+    const coAdmin = new User({
+      name,
+      email,
+      password,
+      phone,
+      role: "co-admin",
+      isApproved: true,
+    });
+
+    await coAdmin.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Co-admin created successfully",
+      data: {
+        _id: coAdmin._id,
+        name: coAdmin.name,
+        email: coAdmin.email,
+        role: coAdmin.role,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "Error creating co-admin",
+      error: error.message,
+    });
+  }
+});
+
+router.delete("/co-admins/:id", isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    const coAdmin = await User.findOne({
+      _id: req.params.id,
+      role: "co-admin",
+    });
+
+    if (!coAdmin) {
+      return res.status(404).json({
+        success: false,
+        message: "Co-admin not found",
+      });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: "Co-admin deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error deleting co-admin",
+      error: error.message,
+    });
   }
 });
 
@@ -142,8 +360,8 @@ router.get(
       const query = status ? { status } : {};
 
       const applications = await AdoptionApplication.find(query)
-        .populate("applicant", "name email phoneNumber")
-        .populate("pet", "name petType breed")
+        .populate("applicant", "name email phone")
+        .populate("pet", "name species breed mainImage status")
         .sort("-createdAt")
         .limit(limit * 1)
         .skip((page - 1) * limit);
@@ -160,13 +378,11 @@ router.get(
         },
       });
     } catch (error) {
-      res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error fetching applications",
-          error: error.message,
-        });
+      res.status(500).json({
+        success: false,
+        message: "Error fetching applications",
+        error: error.message,
+      });
     }
   }
 );
@@ -178,8 +394,8 @@ router.get(
   async (req, res) => {
     try {
       const application = await AdoptionApplication.findById(req.params.id)
-        .populate("applicant", "name email phoneNumber address")
-        .populate("pet", "name petType breed age");
+        .populate("applicant", "name email phone address")
+        .populate("pet", "name species breed age mainImage status");
 
       if (!application) {
         return res
@@ -189,13 +405,11 @@ router.get(
 
       res.json({ success: true, data: application });
     } catch (error) {
-      res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error fetching application",
-          error: error.message,
-        });
+      res.status(500).json({
+        success: false,
+        message: "Error fetching application",
+        error: error.message,
+      });
     }
   }
 );
@@ -206,11 +420,14 @@ router.patch(
   isAdminOrCoAdmin,
   async (req, res) => {
     try {
-      const { status, rejectionReason } = req.body;
+      const { status, rejectionReason, notes } = req.body;
       const updateData = { status };
 
       if (status === "rejected" && rejectionReason) {
         updateData.rejectionReason = rejectionReason;
+      }
+      if (notes) {
+        updateData.adminNotes = notes;
       }
 
       const application = await AdoptionApplication.findByIdAndUpdate(
@@ -225,10 +442,16 @@ router.patch(
           .json({ success: false, message: "Application not found" });
       }
 
-      // If approved, update pet adoption status
+      // If approved, update pet status to adopted
       if (status === "approved") {
         await Pet.findByIdAndUpdate(application.pet, {
-          adoptionStatus: "adopted",
+          status: "adopted",
+        });
+      }
+      // If rejected, set pet back to available
+      if (status === "rejected") {
+        await Pet.findByIdAndUpdate(application.pet, {
+          status: "available",
         });
       }
 
@@ -238,13 +461,11 @@ router.patch(
         data: application,
       });
     } catch (error) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: "Error updating application",
-          error: error.message,
-        });
+      res.status(400).json({
+        success: false,
+        message: "Error updating application",
+        error: error.message,
+      });
     }
   }
 );
@@ -259,7 +480,8 @@ router.get("/messages", isAuthenticated, isAdminOrCoAdmin, async (req, res) => {
     if (priority) query.priority = priority;
 
     const messages = await Message.find(query)
-      .populate("user", "name email")
+      .populate("sender", "name email phone")
+      .populate("response.respondedBy", "name")
       .sort("-createdAt")
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -276,13 +498,11 @@ router.get("/messages", isAuthenticated, isAdminOrCoAdmin, async (req, res) => {
       },
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Error fetching messages",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Error fetching messages",
+      error: error.message,
+    });
   }
 });
 
@@ -311,13 +531,11 @@ router.get(
 
       res.json({ success: true, data: message });
     } catch (error) {
-      res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error fetching message",
-          error: error.message,
-        });
+      res.status(500).json({
+        success: false,
+        message: "Error fetching message",
+        error: error.message,
+      });
     }
   }
 );
@@ -347,13 +565,78 @@ router.patch(
         data: message,
       });
     } catch (error) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: "Error updating message",
-          error: error.message,
-        });
+      res.status(400).json({
+        success: false,
+        message: "Error updating message",
+        error: error.message,
+      });
+    }
+  }
+);
+
+router.patch(
+  "/messages/:id/reply",
+  isAuthenticated,
+  isAdminOrCoAdmin,
+  async (req, res) => {
+    try {
+      const { reply } = req.body;
+      const message = await Message.findByIdAndUpdate(
+        req.params.id,
+        {
+          reply,
+          repliedBy: req.user._id,
+          repliedAt: new Date(),
+          status: "replied",
+        },
+        { new: true }
+      );
+
+      if (!message) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Message not found" });
+      }
+
+      res.json({
+        success: true,
+        message: "Reply sent successfully",
+        data: message,
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: "Error replying to message",
+        error: error.message,
+      });
+    }
+  }
+);
+
+router.delete(
+  "/messages/:id",
+  isAuthenticated,
+  isAdminOrCoAdmin,
+  async (req, res) => {
+    try {
+      const message = await Message.findByIdAndDelete(req.params.id);
+
+      if (!message) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Message not found" });
+      }
+
+      res.json({
+        success: true,
+        message: "Message deleted successfully",
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: "Error deleting message",
+        error: error.message,
+      });
     }
   }
 );
@@ -368,6 +651,14 @@ router.get(
       const stats = {
         users: await User.countDocuments(),
         pendingUsers: await User.countDocuments({ status: "pending" }),
+        pendingSellers: await User.countDocuments({
+          role: "seller",
+          isApproved: false,
+        }),
+        pendingVets: await User.countDocuments({
+          role: "veterinary",
+          isApproved: false,
+        }),
         pets: await Pet.countDocuments(),
         products: await Product.countDocuments(),
         pendingApplications: await AdoptionApplication.countDocuments({
@@ -378,13 +669,11 @@ router.get(
 
       res.json({ success: true, data: stats });
     } catch (error) {
-      res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error fetching statistics",
-          error: error.message,
-        });
+      res.status(500).json({
+        success: false,
+        message: "Error fetching statistics",
+        error: error.message,
+      });
     }
   }
 );
