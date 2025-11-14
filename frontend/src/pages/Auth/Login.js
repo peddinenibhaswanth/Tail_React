@@ -26,14 +26,18 @@ const Login = () => {
   const { user, isLoading, isError, isSuccess, message } = useAuth();
 
   useEffect(() => {
-    if (isError) {
-      dispatch(reset());
-    }
-
-    if (isSuccess || user) {
+    // If already logged in, redirect to dashboard
+    if (isSuccess && user) {
       navigate("/dashboard");
     }
-  }, [user, isError, isSuccess, message, navigate, dispatch]);
+  }, [user, isSuccess, navigate]);
+
+  // Reset errors on component unmount
+  useEffect(() => {
+    return () => {
+      dispatch(reset());
+    };
+  }, [dispatch]);
 
   const onChange = (e) => {
     setFormData((prevState) => ({
