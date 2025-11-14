@@ -5,10 +5,10 @@ export const API_BASE_URL =
 // Pagination
 export const ITEMS_PER_PAGE = 12;
 
-// Pet Categories
-export const PET_SPECIES = ["Dog", "Cat", "Bird", "Rabbit", "Other"];
-export const PET_SIZES = ["Small", "Medium", "Large"];
-export const PET_GENDERS = ["Male", "Female"];
+// Pet Categories (must match backend enum - lowercase)
+export const PET_SPECIES = ["dog", "cat", "bird", "rabbit", "other"];
+export const PET_SIZES = ["small", "medium", "large"];
+export const PET_GENDERS = ["male", "female"];
 export const PET_AGE_RANGES = ["Puppy/Kitten", "Young", "Adult", "Senior"];
 
 // Adoption Status
@@ -18,17 +18,19 @@ export const ADOPTION_STATUS = {
   ADOPTED: "adopted",
 };
 
-// Product Categories
+// Product Categories (must match backend enum - lowercase, same order)
 export const PRODUCT_CATEGORIES = [
-  "Food",
-  "Toys",
-  "Accessories",
-  "Healthcare",
-  "Grooming",
-  "Beds & Furniture",
-  "Training",
-  "Other",
+  "food",
+  "toys",
+  "accessories",
+  "grooming",
+  "health",
+  "training",
+  "other",
 ];
+
+// Pet Types for Products
+export const PET_TYPES = ["dog", "cat", "bird", "rabbit", "all", "other"];
 
 // Order Status
 export const ORDER_STATUS = {
