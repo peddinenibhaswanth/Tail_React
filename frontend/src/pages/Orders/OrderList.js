@@ -9,6 +9,17 @@ const OrderList = () => {
     (state) => state.orders
   );
 
+  const getStatusBadge = (status) => {
+    const statusColors = {
+      pending: "warning",
+      processing: "info",
+      shipped: "primary",
+      delivered: "success",
+      cancelled: "danger",
+    };
+    return statusColors[status] || "secondary";
+  };
+
   useEffect(() => {
     dispatch(getUserOrders());
   }, [dispatch]);
@@ -76,7 +87,7 @@ const OrderList = () => {
             {orders.map((order) => (
               <tr key={order._id}>
                 <td>
-                  <code className="small">{order._id.slice(-8)}</code>
+                  <code className="small">#{order._id.slice(-8)}</code>
                 </td>
                 <td className="text-nowrap">
                   {new Date(order.createdAt).toLocaleDateString()}
@@ -88,10 +99,14 @@ const OrderList = () => {
                   </span>
                 </td>
                 <td className="fw-semibold">
-                  ₹{order.totalAmount?.toFixed(2)}
+                  ₹{(order.total || 0).toFixed(2)}
                 </td>
                 <td>
-                  <span className="badge bg-secondary text-uppercase">
+                  <span
+                    className={`badge text-uppercase bg-${getStatusBadge(
+                      order.status
+                    )}`}
+                  >
                     {order.status}
                   </span>
                 </td>

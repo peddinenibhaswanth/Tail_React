@@ -10,6 +10,17 @@ const OrderDetail = () => {
     (state) => state.orders
   );
 
+  const getStatusBadge = (status) => {
+    const statusColors = {
+      pending: "warning",
+      processing: "info",
+      shipped: "primary",
+      delivered: "success",
+      cancelled: "danger",
+    };
+    return statusColors[status] || "secondary";
+  };
+
   useEffect(() => {
     if (id) {
       dispatch(getOrder(id));
@@ -56,14 +67,14 @@ const OrderDetail = () => {
                   className="d-flex justify-content-between border-bottom py-2"
                 >
                   <div>
-                    <div className="fw-semibold">{item.product?.name}</div>
+                    <div className="fw-semibold">
+                      {item.name || item.product?.name}
+                    </div>
                     <small className="text-muted">
-                      Qty: {item.quantity} × ₹{item.product?.price?.toFixed(2)}
+                      Qty: {item.quantity} × ₹{(item.price || 0).toFixed(2)}
                     </small>
                   </div>
-                  <div>
-                    ₹{(item.quantity * (item.product?.price || 0)).toFixed(2)}
-                  </div>
+                  <div>₹{(item.quantity * (item.price || 0)).toFixed(2)}</div>
                 </div>
               ))}
               {(!order.items || order.items.length === 0) && (
@@ -80,7 +91,8 @@ const OrderDetail = () => {
             <div className="card-body">
               <h5 className="card-title">Summary</h5>
               <p className="mb-1">
-                <strong>Order ID:</strong> {order._id}
+                <strong>Order #:</strong>{" "}
+                {order.orderNumber || order._id.slice(-8)}
               </p>
               <p className="mb-1">
                 <strong>Date:</strong>{" "}
@@ -88,34 +100,68 @@ const OrderDetail = () => {
               </p>
               <p className="mb-1">
                 <strong>Status:</strong>{" "}
-                <span className="badge bg-secondary text-uppercase">
+                <span
+                  className={`badge text-uppercase bg-${getStatusBadge(
+                    order.status
+                  )}`}
+                >
                   {order.status}
+                </span>
+              </p>
+              <p className="mb-1">
+                <strong>Payment:</strong>{" "}
+                <span className="text-uppercase">
+                  {order.paymentMethod || "COD"}
+                </span>
+                {" - "}
+                <span
+                  className={`badge bg-${
+                    order.paymentStatus === "paid" ? "success" : "warning"
+                  }`}
+                >
+                  {order.paymentStatus}
                 </span>
               </p>
               <hr />
               <p className="mb-1">
-                <strong>Total Amount:</strong> ₹{order.totalAmount?.toFixed(2)}
+                <strong>Subtotal:</strong> ₹{(order.subtotal || 0).toFixed(2)}
+              </p>
+              <p className="mb-1">
+                <strong>Shipping:</strong> ₹{(order.shipping || 0).toFixed(2)}
+              </p>
+              <p className="mb-1">
+                <strong>Tax (GST):</strong> ₹{(order.tax || 0).toFixed(2)}
+              </p>
+              <hr />
+              <p className="mb-0 h5">
+                <strong>Total:</strong> ₹{(order.total || 0).toFixed(2)}
               </p>
             </div>
           </div>
 
-          {order.shippingInfo && (
+          {order.shippingAddress && (
             <div className="card">
               <div className="card-body">
                 <h5 className="card-title">Shipping Information</h5>
-                <p className="mb-1">
-                  <strong>{order.shippingInfo.fullName}</strong>
-                </p>
-                <p className="mb-1">{order.shippingInfo.address}</p>
-                <p className="mb-1">
-                  {order.shippingInfo.city}, {order.shippingInfo.state}{" "}
-                  {order.shippingInfo.postalCode}
-                </p>
-                {order.shippingInfo.phone && (
-                  <p className="mb-0">
-                    <strong>Phone:</strong> {order.shippingInfo.phone}
+                {order.shippingAddress.fullName && (
+                  <p className="mb-1">
+                    <strong>Name:</strong> {order.shippingAddress.fullName}
                   </p>
                 )}
+                {order.shippingAddress.phone && (
+                  <p className="mb-1">
+                    <strong>Phone:</strong> {order.shippingAddress.phone}
+                  </p>
+                )}
+                <p className="mb-1">
+                  <strong>Address:</strong>
+                </p>
+                <p className="mb-1">{order.shippingAddress.street}</p>
+                <p className="mb-1">
+                  {order.shippingAddress.city}, {order.shippingAddress.state}{" "}
+                  {order.shippingAddress.zipCode}
+                </p>
+                <p className="mb-0">{order.shippingAddress.country}</p>
               </div>
             </div>
           )}
