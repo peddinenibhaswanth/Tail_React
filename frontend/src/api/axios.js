@@ -38,15 +38,21 @@ axiosInstance.interceptors.response.use(
       });
     }
 
-    const { status, data } = error.response;
+    const { status, data, config } = error.response;
 
-    // Handle 401 Unauthorized - Clear storage and redirect to login
+    // Handle 401 Unauthorized
     if (status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      // Only redirect if not already on login page
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
+      // Don't redirect for auth check endpoints - just let them fail silently
+      const isAuthCheck = config.url?.includes("/api/auth/current");
+
+      if (!isAuthCheck) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        // Only redirect if not already on login/register pages
+        const currentPath = window.location.pathname;
+        if (currentPath !== "/login" && currentPath !== "/register") {
+          window.location.href = "/login";
+        }
       }
     }
 
