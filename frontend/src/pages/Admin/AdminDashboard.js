@@ -52,7 +52,12 @@ const AdminDashboard = () => {
     totalAppointments: data.appointments?.total || 0,
     upcomingAppointments: data.appointments?.upcoming || 0,
     pendingApplications: data.applications?.pending || 0,
-    totalRevenue: data.revenue?.total || 0,
+    // Professional revenue metrics
+    gmv: data.revenue?.gmv || 0, // Gross Merchandise Value
+    platformCommission: data.revenue?.platformCommission || 0,
+    taxCollected: data.revenue?.taxCollected || 0,
+    shippingRevenue: data.revenue?.shippingRevenue || 0,
+    netPlatformRevenue: data.revenue?.netPlatformRevenue || 0,
     unreadMessages: data.unreadMessages || 0,
     // Calculate role counts from byRole array
     customers:
@@ -141,15 +146,50 @@ const AdminDashboard = () => {
         </Col>
       </Row>
 
+      {/* Revenue Analytics - Professional Marketplace Style */}
+      <Row className="g-4 mb-4">
+        <Col md={12}>
+          <Card className="border-0 shadow-sm">
+            <Card.Header className="bg-success text-white">
+              <h5 className="mb-0"><i className="bi bi-graph-up me-2"></i>Revenue Analytics</h5>
+            </Card.Header>
+            <Card.Body>
+              <Row>
+                <Col md={3} className="text-center border-end">
+                  <div className="display-6 text-primary">₹{(stats.gmv || 0).toFixed(0)}</div>
+                  <small className="text-muted d-block">Gross Merchandise Value</small>
+                  <small className="text-muted">(Total Customer Payments)</small>
+                </Col>
+                <Col md={3} className="text-center border-end">
+                  <div className="display-6 text-success">₹{(stats.platformCommission || 0).toFixed(0)}</div>
+                  <small className="text-muted d-block">Platform Commission</small>
+                  <small className="text-muted">(10% from Sellers)</small>
+                </Col>
+                <Col md={3} className="text-center border-end">
+                  <div className="display-6 text-info">₹{(stats.taxCollected || 0).toFixed(0)}</div>
+                  <small className="text-muted d-block">Tax Collected</small>
+                  <small className="text-muted">(18% GST - Liability)</small>
+                </Col>
+                <Col md={3} className="text-center">
+                  <div className="display-6 text-warning">₹{(stats.netPlatformRevenue || 0).toFixed(0)}</div>
+                  <small className="text-muted d-block">Net Platform Revenue</small>
+                  <small className="text-muted">(Commission + Shipping)</small>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
       {/* Secondary Stats */}
       <Row className="g-4 mb-4">
         <Col md={3}>
           <Card className="h-100 border-0 shadow-sm">
             <Card.Body className="text-center">
               <div className="display-6 text-success">
-                ₹{(stats.totalRevenue || 0).toFixed(0)}
+                ₹{(stats.shippingRevenue || 0).toFixed(0)}
               </div>
-              <small className="text-muted">Total Revenue</small>
+              <small className="text-muted">Shipping Revenue</small>
             </Card.Body>
           </Card>
         </Col>

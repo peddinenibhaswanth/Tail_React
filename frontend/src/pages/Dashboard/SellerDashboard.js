@@ -110,7 +110,11 @@ const SellerDashboard = () => {
     pendingOrders: data.orders?.pending || 0,
     deliveredOrders:
       data.orders?.byStatus?.find((s) => s._id === "delivered")?.count || 0,
-    totalRevenue: data.revenue?.total || 0,
+    // Professional earnings breakdown like Amazon/Flipkart Seller Hub
+    grossSales: data.revenue?.grossSales || 0,
+    commissionDeducted: data.revenue?.commissionDeducted || 0,
+    netEarnings: data.revenue?.netEarnings || 0,
+    pendingRevenue: data.revenue?.pendingRevenue || 0,
   };
 
   const pendingOrders = orders?.filter((o) => o.status === "pending") || [];
@@ -154,10 +158,10 @@ const SellerDashboard = () => {
           <Card className="h-100 border-0 shadow-sm bg-info text-white">
             <Card.Body className="text-center">
               <div className="display-4">
-                ₹{(stats.totalRevenue || 0).toFixed(0)}
+                ₹{(stats.netEarnings || 0).toFixed(0)}
               </div>
-              <h6>Total Revenue</h6>
-              <small>Total earnings</small>
+              <h6>Net Earnings</h6>
+              <small>After 10% platform fee</small>
             </Card.Body>
           </Card>
         </Col>
@@ -171,6 +175,47 @@ const SellerDashboard = () => {
               <h6>Pending Orders</h6>
               <small>Needs attention</small>
             </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Earnings Breakdown - Professional Marketplace Style */}
+      <Row className="g-4 mb-4">
+        <Col md={12}>
+          <Card className="border-0 shadow-sm">
+            <Card.Header className="bg-dark text-white">
+              <h5 className="mb-0"><i className="bi bi-wallet2 me-2"></i>Earnings Breakdown</h5>
+            </Card.Header>
+            <Card.Body>
+              <Row>
+                <Col md={3} className="text-center border-end">
+                  <div className="display-6 text-primary">₹{(stats.grossSales || 0).toFixed(0)}</div>
+                  <small className="text-muted d-block">Gross Sales</small>
+                  <small className="text-muted">(Total Product Sales)</small>
+                </Col>
+                <Col md={3} className="text-center border-end">
+                  <div className="display-6 text-danger">- ₹{(stats.commissionDeducted || 0).toFixed(0)}</div>
+                  <small className="text-muted d-block">Platform Commission</small>
+                  <small className="text-muted">(10% Service Fee)</small>
+                </Col>
+                <Col md={3} className="text-center border-end">
+                  <div className="display-6 text-success">₹{(stats.netEarnings || 0).toFixed(0)}</div>
+                  <small className="text-muted d-block">Net Earnings</small>
+                  <small className="text-muted">(Payable to You)</small>
+                </Col>
+                <Col md={3} className="text-center">
+                  <div className="display-6 text-warning">₹{(stats.pendingRevenue || 0).toFixed(0)}</div>
+                  <small className="text-muted d-block">Pending Revenue</small>
+                  <small className="text-muted">(Awaiting Delivery)</small>
+                </Col>
+              </Row>
+            </Card.Body>
+            <Card.Footer className="bg-light">
+              <small className="text-muted">
+                <i className="bi bi-info-circle me-1"></i>
+                Net earnings are calculated after deducting 10% platform commission. Tax (18% GST) is collected separately from customers.
+              </small>
+            </Card.Footer>
           </Card>
         </Col>
       </Row>
