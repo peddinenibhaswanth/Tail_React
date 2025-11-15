@@ -336,41 +336,95 @@ exports.updateOrderStatus = async (req, res) => {
           revenueRecord.productSales.totalRevenue /
           revenueRecord.productSales.totalOrders;
 
+        // Update summary
+        revenueRecord.summary.totalRevenue += order.total;
+        revenueRecord.summary.totalOrders += 1;
+        revenueRecord.summary.totalTransactions += 1;
+
         // Add seller metrics
+        const User = require("../models/User");
         for (const item of order.items) {
           const sellerIndex = revenueRecord.sellerMetrics.findIndex(
             (sm) => sm.seller && sm.seller.toString() === item.seller.toString()
           );
 
           const itemRevenue = item.price * item.quantity;
+          const commission = itemRevenue * 0.1; // 10% commission
 
           if (sellerIndex === -1) {
             // Get seller info
-            const seller = await require("../models/User").findById(
-              item.seller
-            );
+            const seller = await User.findById(item.seller);
             revenueRecord.sellerMetrics.push({
               seller: item.seller,
               name: seller?.name || "Unknown",
               totalSales: item.quantity,
               totalRevenue: itemRevenue,
-              commission: itemRevenue * 0.1, // 10% commission
+              commission: commission,
             });
           } else {
-            revenueRecord.sellerMetrics[sellerIndex].totalSales +=
-              item.quantity;
-            revenueRecord.sellerMetrics[sellerIndex].totalRevenue +=
-              itemRevenue;
-            revenueRecord.sellerMetrics[sellerIndex].commission +=
-              itemRevenue * 0.1;
+            revenueRecord.sellerMetrics[sellerIndex].totalSales += item.quantity;
+            revenueRecord.sellerMetrics[sellerIndex].totalRevenue += itemRevenue;
+            revenueRecord.sellerMetrics[sellerIndex].commission += commission;
           }
         }
 
         await revenueRecord.save();
+        console.log(`Revenue recorded for order ${order.orderNumber}`);
       } catch (revErr) {
         console.error("Revenue recording error:", revErr);
         // Don't fail the order update if revenue recording fails
       }
+    }
+
+    if (status === "cancelled") {
+      // Handle cancellation financial reversal if it was already paid
+      if (order.paymentStatus === "paid") {
+        try {
+          const Transaction = require("../models/Transaction");
+          const Revenue = require("../models/Revenue");
+          const User = require("../models/User");
+
+          // Record a reversal transaction
+          const reversalTxn = new Transaction({
+            order: order._id,
+            user: order.customer, // Primary user is customer for the main sale amount
+            type: "refund",
+            amount: -order.total,
+            tax: -order.tax,
+            netAmount: -(order.total - order.tax),
+            description: `Order ${order.orderNumber} cancelled and refunded.`,
+          });
+          await reversalTxn.save();
+
+          // Update seller balances (reverse the net gain)
+          for (const item of order.items) {
+            const seller = await User.findById(item.seller);
+            if (seller) {
+              const commissionRate = seller.sellerInfo?.commissionRate || 10;
+              const itemTotal = item.price * item.quantity;
+              const commission = itemTotal * (commissionRate / 100);
+              const sellerNet = itemTotal - commission;
+
+              seller.balance -= sellerNet;
+              await seller.save();
+
+              // Record seller-specific reversal in ledger
+              await Transaction.create({
+                order: order._id,
+                user: item.seller,
+                type: "refund",
+                amount: -itemTotal,
+                commission: -commission,
+                netAmount: -sellerNet,
+                description: `Reversal for item ${item.name} in cancelled order ${order.orderNumber}`,
+              });
+            }
+          }
+        } catch (err) {
+          console.error("Cancellation financial reversal error:", err);
+        }
+      }
+      order.paymentStatus = "refunded";
     }
 
     await order.save();
@@ -422,6 +476,95 @@ exports.updatePaymentStatus = async (req, res) => {
     if (paymentStatus === "paid") {
       order.paymentDetails = order.paymentDetails || {};
       order.paymentDetails.paidAt = Date.now();
+
+      // Trigger Revenue and Ledger recording when paid
+      try {
+        const Transaction = require("../models/Transaction");
+        const Revenue = require("../models/Revenue");
+        const User = require("../models/User");
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const periodIdentifier = today.toISOString().split("T")[0];
+
+        let revenueRecord = await Revenue.findOne({ periodType: "daily", periodIdentifier });
+        if (!revenueRecord) {
+          revenueRecord = new Revenue({
+            date: today, periodType: "daily", periodIdentifier,
+            productSales: { totalOrders: 0, totalRevenue: 0, totalProfit: 0 },
+            summary: { totalRevenue: 0, totalTax: 0, totalCommission: 0, totalPayouts: 0, totalOrders: 0, totalTransactions: 0 }
+          });
+        }
+
+        // 1. Transaction Ledger entry for the Order (Customer side)
+        const mainTxn = new Transaction({
+          order: order._id,
+          user: order.customer,
+          type: "sale",
+          amount: order.total,
+          tax: order.tax,
+          netAmount: order.total - order.tax,
+          paymentGateway: { transactionId: transactionId || "N/A", status: "completed" },
+          description: `Payment captured for order ${order.orderNumber}`
+        });
+        await mainTxn.save();
+
+        // 2. Breakdown per Seller
+        let totalCommission = 0;
+        for (const item of order.items) {
+          const seller = await User.findById(item.seller);
+          const commissionRate = seller?.sellerInfo?.commissionRate || 10;
+          const itemTotal = item.price * item.quantity;
+          const commission = itemTotal * (commissionRate / 100);
+          const sellerNet = itemTotal - commission;
+          totalCommission += commission;
+
+          // Update Seller Balance
+          if (seller) {
+            seller.balance = (seller.balance || 0) + sellerNet;
+            await seller.save();
+          }
+
+          // Create Seller Transaction item
+          await Transaction.create({
+            order: order._id,
+            user: item.seller,
+            type: "sale",
+            amount: itemTotal,
+            commission: commission,
+            netAmount: sellerNet,
+            description: `Item sale: ${item.name} (Qty: ${item.quantity})`
+          });
+
+          // Update Seller Metrics in Revenue Record
+          const sellerIndex = revenueRecord.sellerMetrics.findIndex(sm => sm.seller?.toString() === item.seller.toString());
+          if (sellerIndex === -1) {
+            revenueRecord.sellerMetrics.push({
+              seller: item.seller,
+              name: seller?.name || "Unknown",
+              totalSales: item.quantity,
+              totalRevenue: itemTotal,
+              commission: commission
+            });
+          } else {
+            revenueRecord.sellerMetrics[sellerIndex].totalSales += item.quantity;
+            revenueRecord.sellerMetrics[sellerIndex].totalRevenue += itemTotal;
+            revenueRecord.sellerMetrics[sellerIndex].commission += commission;
+          }
+        }
+
+        // 3. Update Global Revenue Record
+        revenueRecord.productSales.totalOrders += 1;
+        revenueRecord.productSales.totalRevenue += order.total;
+        revenueRecord.summary.totalRevenue += order.total;
+        revenueRecord.summary.totalTax += order.tax;
+        revenueRecord.summary.totalCommission += totalCommission;
+        revenueRecord.summary.totalOrders += 1;
+
+        await revenueRecord.save();
+      } catch (err) {
+        console.error("Financial recording error on payment:", err);
+      }
     }
 
     await order.save();
@@ -482,6 +625,54 @@ exports.cancelOrder = async (req, res) => {
     }
 
     order.status = "cancelled";
+
+    // Handle cancellation financial reversal if it was already paid
+    if (order.paymentStatus === "paid") {
+      try {
+        const Transaction = require("../models/Transaction");
+        const User = require("../models/User");
+
+        // Record a reversal transaction for the customer
+        const reversalTxn = new Transaction({
+          order: order._id,
+          user: order.customer,
+          type: "refund",
+          amount: -order.total,
+          tax: -order.tax,
+          netAmount: -(order.total - order.tax),
+          description: `Order ${order.orderNumber} cancelled by user/admin.`,
+        });
+        await reversalTxn.save();
+
+        // Update seller balances
+        for (const item of order.items) {
+          const seller = await User.findById(item.seller);
+          if (seller) {
+            const commissionRate = seller.sellerInfo?.commissionRate || 10;
+            const itemTotal = item.price * item.quantity;
+            const commission = itemTotal * (commissionRate / 100);
+            const sellerNet = itemTotal - commission;
+
+            seller.balance = (seller.balance || 0) - sellerNet;
+            await seller.save();
+
+            // Record seller-specific reversal
+            await Transaction.create({
+              order: order._id,
+              user: item.seller,
+              type: "refund",
+              amount: -itemTotal,
+              commission: -commission,
+              netAmount: -sellerNet,
+              description: `Reversal for item ${item.name} in cancelled order ${order.orderNumber}`,
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Cancellation financial reversal error in cancelOrder:", err);
+      }
+    }
+    order.paymentStatus = "refunded";
 
     // Restore product stock
     for (const item of order.items) {

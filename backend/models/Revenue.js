@@ -130,17 +130,26 @@ const revenueSchema = new mongoose.Schema(
       totalRevenue: {
         type: Number,
         default: 0,
-        min: 0,
+      },
+      totalTax: {
+        type: Number,
+        default: 0,
+      },
+      totalCommission: {
+        type: Number,
+        default: 0,
+      },
+      totalPayouts: {
+        type: Number,
+        default: 0,
       },
       totalOrders: {
         type: Number,
         default: 0,
-        min: 0,
       },
       totalTransactions: {
         type: Number,
         default: 0,
-        min: 0,
       },
     },
 

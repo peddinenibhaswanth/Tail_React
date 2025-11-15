@@ -60,7 +60,7 @@ cartSchema.methods.calculateTotals = function () {
     0
   );
 
-  this.tax = this.subtotal * 0.1;
+  this.tax = this.subtotal * 0.18; // 18% GST
 
   this.shipping = this.subtotal > 500 ? 0 : 50;
 
