@@ -237,6 +237,7 @@ exports.createAppointment = async (req, res) => {
       veterinary,
       petName,
       petType: normalizedPetType,
+      petAge: petAge || "",
       date: new Date(date),
       timeSlot: timeSlotObj,
       reason: reason || "General Checkup",
@@ -380,6 +381,81 @@ exports.updateAppointmentStatus = async (req, res) => {
       const validPaymentStatuses = ["pending", "paid", "refunded"];
       if (validPaymentStatuses.includes(paymentStatus)) {
         appointment.paymentStatus = paymentStatus;
+      }
+    }
+
+    if (status === "completed") {
+      appointment.paymentStatus = "paid";
+
+      // Record revenue for this appointment
+      try {
+        const Transaction = require("../models/Transaction");
+        const Revenue = require("../models/Revenue");
+        const User = require("../models/User");
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const periodIdentifier = today.toISOString().split("T")[0];
+
+        let revenueRecord = await Revenue.findOne({ periodType: "daily", periodIdentifier });
+        if (!revenueRecord) {
+          revenueRecord = new Revenue({
+            date: today, periodType: "daily", periodIdentifier,
+            summary: { totalRevenue: 0, totalTax: 0, totalCommission: 0, totalPayouts: 0, totalOrders: 0, totalTransactions: 0 }
+          });
+        }
+
+        // Get Vet's commission rate
+        const vet = await User.findById(appointment.veterinary);
+        const commissionRate = vet?.vetInfo?.commissionRate || 10;
+        const commission = appointment.consultationFee * (commissionRate / 100);
+        const vetNet = appointment.consultationFee - commission;
+
+        // 1. Update Vet Balance
+        if (vet) {
+          vet.balance = (vet.balance || 0) + vetNet;
+          await vet.save();
+        }
+
+        // 2. Transaction Ledger entry for the Appointment
+        await Transaction.create({
+          appointment: appointment._id,
+          user: appointment.veterinary,
+          type: "sale",
+          amount: appointment.consultationFee,
+          commission: commission,
+          netAmount: vetNet,
+          description: `Veterinary consultation: ${appointment.petName} (${appointment.service})`
+        });
+
+        // 3. Update Global Revenue Record
+        revenueRecord.appointments.totalAppointments += 1;
+        revenueRecord.appointments.totalRevenue += appointment.consultationFee;
+        revenueRecord.summary.totalRevenue += appointment.consultationFee;
+        revenueRecord.summary.totalCommission += commission;
+        revenueRecord.summary.totalTransactions += 1;
+
+        // Add to veterinary breakdown in Revenue record
+        const vetIndex = revenueRecord.appointments.byVeterinary.findIndex(
+          (v) => v.veterinary && v.veterinary.toString() === appointment.veterinary.toString()
+        );
+
+        if (vetIndex === -1) {
+          revenueRecord.appointments.byVeterinary.push({
+            veterinary: appointment.veterinary,
+            name: vet?.name || "Unknown",
+            count: 1,
+            revenue: appointment.consultationFee,
+          });
+        } else {
+          revenueRecord.appointments.byVeterinary[vetIndex].count += 1;
+          revenueRecord.appointments.byVeterinary[vetIndex].revenue +=
+            appointment.consultationFee;
+        }
+
+        await revenueRecord.save();
+      } catch (revErr) {
+        console.error("Appointment revenue recording error:", revErr);
       }
     }
 
