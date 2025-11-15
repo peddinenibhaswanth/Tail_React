@@ -447,6 +447,64 @@ router.patch(
         await Pet.findByIdAndUpdate(application.pet, {
           status: "adopted",
         });
+
+        // Record revenue for this adoption
+        try {
+          const Transaction = require("../models/Transaction");
+          const Revenue = require("../models/Revenue");
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const periodIdentifier = today.toISOString().split("T")[0];
+
+          let revenueRecord = await Revenue.findOne({ periodType: "daily", periodIdentifier });
+          if (!revenueRecord) {
+            revenueRecord = new Revenue({
+              date: today, periodType: "daily", periodIdentifier,
+              summary: { totalRevenue: 0, totalTax: 0, totalCommission: 0, totalPayouts: 0, totalOrders: 0, totalTransactions: 0 }
+            });
+          }
+
+          const adoptionFee = application.adoptionFee || 0;
+
+          // 1. Transaction Ledger entry for the Adoption
+          await Transaction.create({
+            adoption: application._id,
+            user: application.customer,
+            type: "sale",
+            amount: adoptionFee,
+            netAmount: adoptionFee,
+            description: `Pet adoption approved: ${application.petName || "Pet"}`
+          });
+
+          // 2. Update Global Revenue Record
+          revenueRecord.adoptions.totalAdoptions += 1;
+          revenueRecord.adoptions.totalRevenue += adoptionFee;
+          revenueRecord.summary.totalRevenue += adoptionFee;
+          revenueRecord.summary.totalTransactions += 1;
+
+          // Update by species
+          const petDoc = await Pet.findById(application.pet);
+          if (petDoc) {
+            const speciesIndex = revenueRecord.adoptions.bySpecies.findIndex(
+              (s) => s.species.toLowerCase() === petDoc.species.toLowerCase()
+            );
+
+            if (speciesIndex === -1) {
+              revenueRecord.adoptions.bySpecies.push({
+                species: petDoc.species,
+                count: 1,
+                revenue: adoptionFee,
+              });
+            } else {
+              revenueRecord.adoptions.bySpecies[speciesIndex].count += 1;
+              revenueRecord.adoptions.bySpecies[speciesIndex].revenue += adoptionFee;
+            }
+          }
+
+          await revenueRecord.save();
+        } catch (revErr) {
+          console.error("Adoption revenue recording error:", revErr);
+        }
       }
       // If rejected, set pet back to available
       if (status === "rejected") {

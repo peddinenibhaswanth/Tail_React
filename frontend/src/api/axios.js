@@ -29,12 +29,15 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle network errors
+    // Handle network errors (backend down)
     if (!error.response) {
-      console.error("Network error:", error.message);
+      console.error("CRITICAL: Backend connection failed!");
+      // You could also dispatch a global error action here if you had access to the store
       return Promise.reject({
-        message: "Network error. Please check your connection.",
+        message: "Server is currently unreachable. Please ensure the backend is running.",
         isNetworkError: true,
+        status: 0,
+        data: null
       });
     }
 
