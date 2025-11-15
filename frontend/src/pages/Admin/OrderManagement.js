@@ -90,8 +90,9 @@ const OrderManagement = () => {
 
   const filteredOrders = ordersList.filter((order) => {
     const orderId = order._id || "";
-    const customerName = order.user?.name || "";
-    const customerEmail = order.user?.email || "";
+    // Backend returns 'customer' field, not 'user'
+    const customerName = order.customer?.name || "";
+    const customerEmail = order.customer?.email || "";
     const orderStatus = order.orderStatus || order.status || "";
 
     const matchesSearch =
@@ -262,10 +263,10 @@ const OrderManagement = () => {
                         <code>#{order._id.slice(-8)}</code>
                       </td>
                       <td>
-                        <strong>{order.user?.name || "N/A"}</strong>
+                        <strong>{order.customer?.name || "N/A"}</strong>
                         <br />
                         <small className="text-muted">
-                          {order.user?.email || "N/A"}
+                          {order.customer?.email || "N/A"}
                         </small>
                       </td>
                       <td>
@@ -330,7 +331,7 @@ const OrderManagement = () => {
                 <strong>Order ID:</strong> #{selectedOrder._id.slice(-8)}
               </p>
               <p>
-                <strong>Customer:</strong> {selectedOrder.user?.name || "N/A"}
+                <strong>Customer:</strong> {selectedOrder.customer?.name || "N/A"}
               </p>
               <p>
                 <strong>Total:</strong> ₹

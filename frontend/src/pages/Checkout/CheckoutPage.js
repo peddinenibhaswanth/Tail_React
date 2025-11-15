@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { getCart, clearCart } from "../../redux/slices/cartSlice";
-import { createOrder } from "../../redux/slices/orderSlice";
+import { createOrder, resetOrders, clearOrder } from "../../redux/slices/orderSlice";
 
 const CheckoutPage = () => {
   const dispatch = useDispatch();
@@ -35,13 +35,21 @@ const CheckoutPage = () => {
   const [validated, setValidated] = useState(false);
 
   useEffect(() => {
+    // Reset order state when component mounts to allow new orders
+    dispatch(resetOrders());
+    dispatch(clearOrder());
     dispatch(getCart());
   }, [dispatch]);
 
   useEffect(() => {
+    // Only navigate if we just successfully created a new order
+    // Check both isSuccess flag and that order exists with an ID
     if (isSuccess && order && order._id) {
+      // Clear cart and navigate to success page
       dispatch(clearCart());
       navigate(`/order-success/${order._id}`);
+      // Reset the success flag after navigation to prevent re-navigation
+      dispatch(resetOrders());
     }
   }, [isSuccess, order, navigate, dispatch]);
 
@@ -407,10 +415,27 @@ const CheckoutPage = () => {
                 </div>
               ))}
               <hr />
-              <div className="d-flex justify-content-between fw-semibold">
-                <span>Total</span>
+              {/* Pricing Breakdown */}
+              <div className="d-flex justify-content-between mb-2">
+                <span>Subtotal</span>
                 <span>₹{total.toFixed(2)}</span>
               </div>
+              <div className="d-flex justify-content-between mb-2">
+                <span>Tax (18% GST)</span>
+                <span>₹{(total * 0.18).toFixed(2)}</span>
+              </div>
+              <div className="d-flex justify-content-between mb-2">
+                <span>Shipping</span>
+                <span>{total > 1000 ? "Free" : "₹50.00"}</span>
+              </div>
+              <hr />
+              <div className="d-flex justify-content-between fw-bold fs-5">
+                <span>Total Amount</span>
+                <span>₹{(total + (total * 0.18) + (total > 1000 ? 0 : 50)).toFixed(2)}</span>
+              </div>
+              <small className="text-muted d-block mt-2">
+                {total > 1000 ? "🎉 You qualify for free shipping!" : `Add ₹${(1001 - total).toFixed(0)} more for free shipping`}
+              </small>
             </div>
           </div>
         </div>
