@@ -381,6 +381,7 @@ exports.getProductsBySeller = async (req, res) => {
     const { page = 1, limit = 12 } = req.query;
 
     const products = await Product.find({ seller: req.params.sellerId })
+      .populate("seller", "name sellerInfo.businessName")
       .sort("-createdAt")
       .limit(limit * 1)
       .skip((page - 1) * limit)

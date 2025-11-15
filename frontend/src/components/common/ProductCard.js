@@ -8,6 +8,10 @@ import useAuth from "../../hooks/useAuth";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
 
+// Inline SVG placeholder to prevent infinite error loops
+const DEFAULT_PRODUCT_IMAGE =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='250' viewBox='0 0 300 250'%3E%3Crect fill='%23f0f0f0' width='300' height='250'/%3E%3Ctext fill='%23999' font-family='Arial' font-size='16' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3E📦 No Image%3C/text%3E%3C/svg%3E";
+
 const ProductCard = ({ product }) => {
   const dispatch = useDispatch();
   const { isAuthenticated } = useAuth();
@@ -31,7 +35,7 @@ const ProductCard = ({ product }) => {
   // Get image URL
   const getImageUrl = () => {
     const img = mainImage || image;
-    if (!img) return "/images/default-product.jpg";
+    if (!img) return DEFAULT_PRODUCT_IMAGE;
     if (img.startsWith("http")) return img;
     return `${API_URL}/uploads/products/${img}`;
   };
@@ -74,25 +78,29 @@ const ProductCard = ({ product }) => {
           {alertMessage}
         </Alert>
       )}
-      <div className="position-relative">
-        <Card.Img
-          variant="top"
-          src={getImageUrl()}
-          alt={`${name} product image`}
-          style={{ height: "250px", objectFit: "cover" }}
-          loading="lazy"
-          onError={(e) => {
-            e.target.src = "/images/default-product.jpg";
-          }}
-        />
-        {stock === 0 && (
-          <div className="position-absolute top-0 end-0 m-2">
-            <Badge bg="danger" className="px-3 py-2">
-              Out of Stock
-            </Badge>
-          </div>
-        )}
-      </div>
+      <Link to={`/products/${_id}`} className="text-decoration-none">
+        <div className="position-relative">
+          <Card.Img
+            variant="top"
+            src={getImageUrl()}
+            alt={`${name} product image`}
+            style={{ height: "250px", objectFit: "cover" }}
+            loading="lazy"
+            onError={(e) => {
+              if (e.target.src !== DEFAULT_PRODUCT_IMAGE) {
+                e.target.src = DEFAULT_PRODUCT_IMAGE;
+              }
+            }}
+          />
+          {stock === 0 && (
+            <div className="position-absolute top-0 end-0 m-2">
+              <Badge bg="danger" className="px-3 py-2">
+                Out of Stock
+              </Badge>
+            </div>
+          )}
+        </div>
+      </Link>
       <Card.Body className="d-flex flex-column">
         <div className="mb-2">
           <Badge bg="info" className="text-uppercase small">
@@ -101,7 +109,9 @@ const ProductCard = ({ product }) => {
         </div>
 
         <Card.Title className="mb-2 text-truncate" title={name}>
-          {name}
+          <Link to={`/products/${_id}`} className="text-decoration-none text-dark">
+            {name}
+          </Link>
         </Card.Title>
 
         <div
@@ -122,15 +132,6 @@ const ProductCard = ({ product }) => {
         </Card.Text>
 
         <div className="mt-auto d-grid gap-2">
-          <Link to={`/products/${_id}`}>
-            <Button
-              variant="outline-primary"
-              className="w-100"
-              aria-label={`View details for ${name}`}
-            >
-              <i className="bi bi-eye me-2"></i>View Details
-            </Button>
-          </Link>
           {stock > 0 && (
             <Button
               variant="primary"
