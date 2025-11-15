@@ -24,6 +24,10 @@ import Loading from "../../components/common/Loading";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
 
+// Inline SVG placeholder to prevent infinite error loops
+const DEFAULT_AVATAR =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Crect fill='%23e0e0e0' width='60' height='60'/%3E%3Ctext fill='%23999' font-family='Arial' font-size='12' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E";
+
 const BookAppointment = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -329,7 +333,7 @@ const BookAppointment = () => {
                                 src={
                                   selectedVet.profilePicture
                                     ? `${API_URL}/uploads/users/${selectedVet.profilePicture}`
-                                    : "/images/default-avatar.png"
+                                    : DEFAULT_AVATAR
                                 }
                                 alt={selectedVet.name}
                                 className="rounded-circle"
@@ -339,7 +343,9 @@ const BookAppointment = () => {
                                   objectFit: "cover",
                                 }}
                                 onError={(e) => {
-                                  e.target.src = "/images/default-avatar.png";
+                                  if (e.target.src !== DEFAULT_AVATAR) {
+                                    e.target.src = DEFAULT_AVATAR;
+                                  }
                                 }}
                               />
                             </Col>
