@@ -17,6 +17,10 @@ import { formatDate } from "../../utils/formatters";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
 
+// Inline SVG placeholder to prevent infinite error loops
+const DEFAULT_PET_IMAGE =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='250' viewBox='0 0 300 250'%3E%3Crect fill='%23f0f0f0' width='300' height='250'/%3E%3Ctext fill='%23999' font-family='Arial' font-size='16' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3E🐾 No Image%3C/text%3E%3C/svg%3E";
+
 const PetDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -60,7 +64,7 @@ const PetDetail = () => {
 
   // Get image URL
   const getImageUrl = (img) => {
-    if (!img) return "/images/default-pet.jpg";
+    if (!img) return DEFAULT_PET_IMAGE;
     if (img.startsWith("http")) return img;
     return `${API_URL}/uploads/pets/${img}`;
   };
@@ -125,7 +129,9 @@ const PetDetail = () => {
               alt={pet.name}
               style={{ height: "400px", objectFit: "cover" }}
               onError={(e) => {
-                e.target.src = "/images/default-pet.jpg";
+                if (e.target.src !== DEFAULT_PET_IMAGE) {
+                  e.target.src = DEFAULT_PET_IMAGE;
+                }
               }}
             />
             {pet.images && pet.images.length > 1 && (
@@ -143,7 +149,9 @@ const PetDetail = () => {
                       cursor: "pointer",
                     }}
                     onError={(e) => {
-                      e.target.src = "/images/default-pet.jpg";
+                      if (e.target.src !== DEFAULT_PET_IMAGE) {
+                        e.target.src = DEFAULT_PET_IMAGE;
+                      }
                     }}
                   />
                 ))}
