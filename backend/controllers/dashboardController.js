@@ -64,20 +64,31 @@ exports.getAdminDashboard = async (req, res) => {
       { $group: { _id: "$status", count: { $sum: 1 } } },
     ]);
 
-    // Revenue statistics
-    const revenueData = await Order.aggregate([
-      { $match: { status: "delivered", createdAt: { $gte: startDate } } },
-      {
-        $group: {
-          _id: null,
-          totalRevenue: { $sum: "$total" },
-          orderCount: { $sum: 1 },
-        },
-      },
-    ]);
+    // Revenue statistics - Professional breakdown like Amazon/Flipkart
+    // Get all delivered orders for accurate revenue calculation
+    const deliveredOrdersData = await Order.find({
+      status: "delivered",
+      createdAt: { $gte: startDate },
+    });
 
-    const totalRevenue = revenueData[0]?.totalRevenue || 0;
-    const deliveredOrders = revenueData[0]?.orderCount || 0;
+    // Calculate professional revenue breakdown
+    let gmv = 0; // Gross Merchandise Value (total customer paid)
+    let productRevenue = 0; // Just product prices
+    let taxCollected = 0; // Tax collected from customers
+    let shippingRevenue = 0; // Shipping fees collected
+    let platformCommission = 0; // 10% commission from sellers
+
+    for (const order of deliveredOrdersData) {
+      gmv += order.total || 0;
+      const orderSubtotal = order.subtotal || 0;
+      productRevenue += orderSubtotal;
+      taxCollected += order.tax || 0;
+      shippingRevenue += order.shipping || 0;
+      platformCommission += orderSubtotal * 0.1; // 10% platform commission
+    }
+
+    const deliveredOrders = deliveredOrdersData.length;
+    const netPlatformRevenue = platformCommission + shippingRevenue; // Platform actually keeps this
 
     // Appointment statistics
     const totalAppointments = await Appointment.countDocuments();
@@ -136,7 +147,13 @@ exports.getAdminDashboard = async (req, res) => {
           veterinarians: pendingVeterinarians,
         },
         revenue: {
-          total: totalRevenue,
+          // Professional breakdown like Amazon Seller Central / Flipkart
+          gmv: gmv, // Total amount customers paid
+          productSales: productRevenue, // Product prices only
+          platformCommission: platformCommission, // 10% from sellers
+          taxCollected: taxCollected, // GST collected (liability)
+          shippingRevenue: shippingRevenue, // Shipping fees
+          netPlatformRevenue: netPlatformRevenue, // Commission + Shipping (actual platform earnings)
           period: `Last ${days} days`,
         },
         recentActivity,
@@ -297,8 +314,11 @@ exports.getSellerDashboard = async (req, res) => {
           byStatus: sellerOrders,
         },
         revenue: {
-          total: deliveredRevenue, // Only revenue from delivered orders
-          totalRevenue: totalRevenue, // All orders revenue (for reference)
+          // Professional breakdown like Amazon/Flipkart Seller Hub
+          grossSales: deliveredRevenue, // Total product sales (before commission)
+          commissionDeducted: deliveredRevenue * 0.1, // 10% platform fee
+          netEarnings: deliveredRevenue * 0.9, // What seller actually receives
+          pendingRevenue: totalRevenue - deliveredRevenue, // Revenue from non-delivered orders
           period: `Last ${days} days`,
         },
         topProducts,
@@ -464,7 +484,7 @@ exports.getCustomerDashboard = async (req, res) => {
     const upcomingAppointments = await Appointment.countDocuments({
       user: userId,
       date: { $gte: new Date() },
-      status: { $in: ["scheduled", "confirmed"] },
+      status: { $in: ["pending", "scheduled", "confirmed"] },
     });
 
     // Adoption applications

@@ -214,7 +214,8 @@ const UserManagement = () => {
       {/* Users Table */}
       <Card>
         <Card.Body>
-          <Table striped bordered hover responsive>
+          <div style={{ maxHeight: '600px', overflowY: 'auto', overflowX: 'auto' }}>
+            <Table striped bordered hover>
             <thead>
               <tr>
                 <th>Name</th>
@@ -321,6 +322,7 @@ const UserManagement = () => {
               )}
             </tbody>
           </Table>
+          </div>
         </Card.Body>
       </Card>
 
