@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Container, Row, Col, Form, Button, InputGroup } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
 import { getPets, resetPets } from "../../redux/slices/petSlice";
@@ -12,6 +12,8 @@ const PetList = () => {
     (state) => state.pets
   );
 
+  // Separate search input state from applied filters
+  const [searchInput, setSearchInput] = useState("");
   const [filters, setFilters] = useState({
     search: "",
     species: "",
@@ -22,17 +24,47 @@ const PetList = () => {
     gender: "",
   });
 
+  // Ref for search input to maintain focus
+  const searchInputRef = useRef(null);
+
+  // Debounce timer ref
+  const debounceTimerRef = useRef(null);
+
+  // Fetch pets when filters change (not on every keystroke)
   useEffect(() => {
     dispatch(getPets(filters));
     return () => dispatch(resetPets());
   }, [dispatch, filters]);
 
+  // Debounced search handler
+  const debouncedSearch = useCallback((value) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, search: value }));
+    }, 500); // 500ms debounce delay
+  }, []);
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchInput(value);
+    debouncedSearch(value);
+  };
+
+  // Handle other filter changes (immediate, no debounce needed for dropdowns)
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
+    if (name === "search") {
+      handleSearchChange(e);
+    } else {
+      setFilters((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleReset = () => {
+    setSearchInput("");
     setFilters({
       search: "",
       species: "",
@@ -43,6 +75,15 @@ const PetList = () => {
       gender: "",
     });
   };
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   if (isLoading) {
     return <Loading />;
@@ -62,10 +103,11 @@ const PetList = () => {
               <Form.Label>Search</Form.Label>
               <InputGroup>
                 <Form.Control
+                  ref={searchInputRef}
                   type="text"
                   name="search"
-                  value={filters.search}
-                  onChange={handleFilterChange}
+                  value={searchInput}
+                  onChange={handleSearchChange}
                   placeholder="Search by name or breed..."
                 />
               </InputGroup>

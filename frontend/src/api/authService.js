@@ -2,7 +2,12 @@ import axios from "./axios";
 
 // Register user
 export const register = async (userData) => {
-  const response = await axios.post("/api/auth/register", userData);
+  // Prepare data with password2 for backend validation
+  const registerData = {
+    ...userData,
+    password2: userData.password, // Backend expects password2 for confirmation
+  };
+  const response = await axios.post("/api/auth/register", registerData);
   if (response.data.success && response.data.user) {
     localStorage.setItem("user", JSON.stringify(response.data.user));
   }
