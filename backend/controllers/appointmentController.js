@@ -195,10 +195,27 @@ exports.createAppointment = async (req, res) => {
       });
     }
 
+    // Parse timeSlot - can be string "09:00-10:00" or object {start, end}
+    let timeSlotObj;
+    if (typeof timeSlot === "string") {
+      const [start, end] = timeSlot.split("-");
+      timeSlotObj = {
+        start: start.trim(),
+        end: end ? end.trim() : start.trim(),
+      };
+    } else if (timeSlot && timeSlot.start) {
+      timeSlotObj = timeSlot;
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid time slot format",
+      });
+    }
+
     const existingAppointment = await Appointment.findOne({
       veterinary,
       date: new Date(date),
-      timeSlot,
+      "timeSlot.start": timeSlotObj.start,
       status: { $in: ["pending", "confirmed"] },
     });
 
@@ -209,15 +226,21 @@ exports.createAppointment = async (req, res) => {
       });
     }
 
+    // Normalize petType to lowercase
+    const normalizedPetType = petType ? petType.toLowerCase() : "other";
+
+    // Default consultation fee (can be dynamic based on vet or service)
+    const consultationFee = vet.vetInfo?.consultationFee || 500;
+
     const appointment = await Appointment.create({
       customer: req.user._id,
       veterinary,
       petName,
-      petType,
-      petAge,
+      petType: normalizedPetType,
       date: new Date(date),
-      timeSlot,
-      reason,
+      timeSlot: timeSlotObj,
+      reason: reason || "General Checkup",
+      consultationFee,
     });
 
     const populatedAppointment = await Appointment.findById(appointment._id)
@@ -312,7 +335,7 @@ exports.updateAppointment = async (req, res) => {
 // @access  Private (Veterinary/Admin)
 exports.updateAppointmentStatus = async (req, res) => {
   try {
-    const { status, notes } = req.body;
+    const { status, notes, paymentStatus } = req.body;
 
     const appointment = await Appointment.findById(req.params.id);
 
@@ -334,16 +357,31 @@ exports.updateAppointmentStatus = async (req, res) => {
       });
     }
 
-    const validStatuses = ["pending", "confirmed", "completed", "cancelled"];
-    if (!validStatuses.includes(status)) {
+    const validStatuses = [
+      "pending",
+      "confirmed",
+      "in-progress",
+      "completed",
+      "cancelled",
+      "no-show",
+    ];
+    if (status && !validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
         message: "Invalid status value",
       });
     }
 
-    appointment.status = status;
-    if (notes) appointment.notes = notes;
+    if (status) appointment.status = status;
+    if (notes !== undefined) appointment.notes = notes;
+
+    // Update payment status if provided
+    if (paymentStatus) {
+      const validPaymentStatuses = ["pending", "paid", "refunded"];
+      if (validPaymentStatuses.includes(paymentStatus)) {
+        appointment.paymentStatus = paymentStatus;
+      }
+    }
 
     await appointment.save();
 
@@ -431,7 +469,6 @@ exports.getAvailableSlots = async (req, res) => {
       "10:00-11:00",
       "11:00-12:00",
       "12:00-13:00",
-      "13:00-14:00",
       "14:00-15:00",
       "15:00-16:00",
       "16:00-17:00",
@@ -449,7 +486,12 @@ exports.getAvailableSlots = async (req, res) => {
       status: { $in: ["pending", "confirmed"] },
     }).select("timeSlot");
 
-    const bookedSlots = bookedAppointments.map((apt) => apt.timeSlot);
+    // Extract booked slot start times
+    const bookedSlots = bookedAppointments.map((apt) => {
+      if (typeof apt.timeSlot === "string") return apt.timeSlot;
+      return `${apt.timeSlot?.start}-${apt.timeSlot?.end}`;
+    });
+
     const availableSlots = allSlots.filter(
       (slot) => !bookedSlots.includes(slot)
     );
