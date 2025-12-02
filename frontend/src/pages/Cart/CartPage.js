@@ -7,6 +7,8 @@ import {
   removeFromCart,
   clearCart,
   calculateTotal,
+  updateQuantityOptimistic,
+  removeItemOptimistic,
 } from "../../redux/slices/cartSlice";
 
 const CartPage = () => {
@@ -25,13 +27,19 @@ const CartPage = () => {
     dispatch(calculateTotal());
   }, [dispatch, items]);
 
-  const handleQuantityChange = (itemId, quantity) => {
+  const handleQuantityChange = (productId, quantity) => {
     if (quantity < 1) return;
-    dispatch(updateCartItem({ itemId, quantity }));
+    // Optimistic update - instant UI feedback
+    dispatch(updateQuantityOptimistic({ productId, quantity }));
+    // Then sync with backend
+    dispatch(updateCartItem({ itemId: productId, quantity }));
   };
 
-  const handleRemove = (itemId) => {
-    dispatch(removeFromCart(itemId));
+  const handleRemove = (productId) => {
+    // Optimistic update - instant UI feedback
+    dispatch(removeItemOptimistic(productId));
+    // Then sync with backend
+    dispatch(removeFromCart(productId));
   };
 
   const handleClearCart = () => {
@@ -107,7 +115,10 @@ const CartPage = () => {
                           type="button"
                           className="btn btn-outline-secondary"
                           onClick={() =>
-                            handleQuantityChange(item._id, item.quantity - 1)
+                            handleQuantityChange(
+                              item.product._id,
+                              item.quantity - 1
+                            )
                           }
                         >
                           -
@@ -119,7 +130,7 @@ const CartPage = () => {
                           min="1"
                           onChange={(e) =>
                             handleQuantityChange(
-                              item._id,
+                              item.product._id,
                               Number(e.target.value) || 1
                             )
                           }
@@ -128,7 +139,10 @@ const CartPage = () => {
                           type="button"
                           className="btn btn-outline-secondary"
                           onClick={() =>
-                            handleQuantityChange(item._id, item.quantity + 1)
+                            handleQuantityChange(
+                              item.product._id,
+                              item.quantity + 1
+                            )
                           }
                         >
                           +
@@ -137,7 +151,7 @@ const CartPage = () => {
                       <button
                         type="button"
                         className="btn btn-link text-danger ms-3 p-0"
-                        onClick={() => handleRemove(item._id)}
+                        onClick={() => handleRemove(item.product._id)}
                       >
                         Remove
                       </button>

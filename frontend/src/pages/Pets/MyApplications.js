@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import {
   Container,
   Card,
@@ -13,6 +13,7 @@ import {
 } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import axios from "../../api/axios";
+import NotificationContext from "../../context/NotificationContext";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
 
@@ -23,8 +24,21 @@ const MyApplications = () => {
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
+  // Ref to prevent double notification in StrictMode
+  const notificationShownRef = useRef(false);
+
+  // Using useContext to access notification functions
+  // This is NECESSARILY required because notifications need to be displayed
+  // at the App level (outside this component) and persist across navigation
+  const { showSuccess, showError } = useContext(NotificationContext);
+
   useEffect(() => {
     fetchApplications();
+    // Reset ref on unmount so notification shows again on next visit
+    return () => {
+      notificationShownRef.current = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchApplications = async () => {
@@ -33,8 +47,29 @@ const MyApplications = () => {
       const response = await axios.get("/api/pets/applications/my");
       setApplications(response.data.data || []);
       setError(null);
+
+      // Show notification only for approved applications (important news!)
+      // Use ref to prevent double notification in React StrictMode
+      const approvedCount = (response.data.data || []).filter(
+        (a) => a.status === "approved"
+      ).length;
+
+      if (approvedCount > 0 && !notificationShownRef.current) {
+        notificationShownRef.current = true;
+        showSuccess(
+          `Great news! You have ${approvedCount} approved application(s)!`
+        );
+      }
     } catch (err) {
-      setError(err.message || "Failed to fetch applications");
+      // Only set error state, don't show toast on load to avoid annoying users
+      const errorMsg =
+        err.response?.data?.message || "Failed to fetch applications";
+      setError(errorMsg);
+      // Only show error toast if it's not a 401 (authentication) error
+      if (err.response?.status !== 401 && !notificationShownRef.current) {
+        notificationShownRef.current = true;
+        showError(errorMsg);
+      }
     } finally {
       setLoading(false);
     }

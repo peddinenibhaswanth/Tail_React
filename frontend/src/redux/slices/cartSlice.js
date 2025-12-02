@@ -114,15 +114,38 @@ export const cartSlice = createSlice({
       state.total = total;
       state.itemCount = itemCount;
     },
+    // Optimistic update for quantity change (instant UI update)
+    updateQuantityOptimistic: (state, action) => {
+      const { productId, quantity } = action.payload;
+      const itemIndex = state.items.findIndex(
+        (item) => item.product._id === productId
+      );
+      if (itemIndex !== -1) {
+        state.items[itemIndex].quantity = quantity;
+        cartSlice.caseReducers.calculateTotal(state);
+      }
+    },
+    // Optimistic remove item
+    removeItemOptimistic: (state, action) => {
+      const productId = action.payload;
+      state.items = state.items.filter(
+        (item) => item.product._id !== productId
+      );
+      cartSlice.caseReducers.calculateTotal(state);
+    },
   },
   extraReducers: (builder) => {
     builder
       // Get cart
       .addCase(getCart.pending, (state) => {
         state.isLoading = true;
+        state.isError = false;
+        state.message = "";
       })
       .addCase(getCart.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.isError = false;
+        state.message = "";
         // Backend returns {success, data: {items, ...}}
         const cartData = action.payload.data || action.payload;
         state.items = cartData.items || [];
@@ -130,51 +153,51 @@ export const cartSlice = createSlice({
       })
       .addCase(getCart.rejected, (state, action) => {
         state.isLoading = false;
-        state.isError = true;
-        state.message = action.payload;
+        // Don't show error message for cart fetch failures - just reset cart
+        state.isError = false;
+        state.message = "";
+        state.items = [];
+        state.total = 0;
+        state.itemCount = 0;
       })
       // Add to cart
       .addCase(addToCart.pending, (state) => {
         state.isLoading = true;
+        state.isError = false;
+        state.message = "";
       })
       .addCase(addToCart.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.isError = false;
         const cartData = action.payload.data || action.payload;
         state.items = cartData.items || [];
+        state.message = "Item added to cart!";
         cartSlice.caseReducers.calculateTotal(state);
       })
       .addCase(addToCart.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
-        state.message = action.payload;
+        state.message = action.payload || "Failed to add item to cart";
       })
-      // Update cart item
-      .addCase(updateCartItem.pending, (state) => {
-        state.isLoading = true;
-      })
+      // Update cart item (no loading - optimistic update handles UI)
       .addCase(updateCartItem.fulfilled, (state, action) => {
-        state.isLoading = false;
         const cartData = action.payload.data || action.payload;
         state.items = cartData.items || [];
         cartSlice.caseReducers.calculateTotal(state);
       })
       .addCase(updateCartItem.rejected, (state, action) => {
-        state.isLoading = false;
+        // On error, refetch cart to restore correct state
         state.isError = true;
         state.message = action.payload;
       })
-      // Remove from cart
-      .addCase(removeFromCart.pending, (state) => {
-        state.isLoading = true;
-      })
+      // Remove from cart (no loading - optimistic update handles UI)
       .addCase(removeFromCart.fulfilled, (state, action) => {
-        state.isLoading = false;
         const cartData = action.payload.data || action.payload;
         state.items = cartData.items || [];
         cartSlice.caseReducers.calculateTotal(state);
       })
       .addCase(removeFromCart.rejected, (state, action) => {
-        state.isLoading = false;
+        // On error, refetch cart to restore correct state
         state.isError = true;
         state.message = action.payload;
       })
@@ -187,5 +210,10 @@ export const cartSlice = createSlice({
   },
 });
 
-export const { resetCart, calculateTotal } = cartSlice.actions;
+export const {
+  resetCart,
+  calculateTotal,
+  updateQuantityOptimistic,
+  removeItemOptimistic,
+} = cartSlice.actions;
 export default cartSlice.reducer;

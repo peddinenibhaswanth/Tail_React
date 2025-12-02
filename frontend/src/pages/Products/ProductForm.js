@@ -11,20 +11,23 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  getProductById,
+  getProduct,
   createProduct,
   updateProduct,
-  reset,
+  resetProducts,
 } from "../../redux/slices/productSlice";
-import { PRODUCT_CATEGORIES } from "../../utils/constants";
+import { PRODUCT_CATEGORIES, PET_TYPES } from "../../utils/constants";
 import Loading from "../../components/common/Loading";
+import useAuth from "../../hooks/useAuth";
 
 const ProductForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { currentProduct, isLoading, isError, isSuccess, message } =
-    useSelector((state) => state.products);
+  const { user, isSeller, isAdmin, isStaff } = useAuth();
+  const { product, isLoading, isError, isSuccess, message } = useSelector(
+    (state) => state.products
+  );
 
   const isEditMode = Boolean(id);
 
@@ -33,6 +36,7 @@ const ProductForm = () => {
     description: "",
     price: "",
     category: "",
+    petType: "all",
     brand: "",
     stock: "",
     specifications: "",
@@ -41,33 +45,45 @@ const ProductForm = () => {
   const [errors, setErrors] = useState({});
   const [images, setImages] = useState([]);
 
+  // Determine redirect path based on role
+  const getRedirectPath = () => {
+    if (isAdmin || isStaff) {
+      return "/admin/products";
+    } else if (isSeller) {
+      return "/seller/products";
+    }
+    return "/products";
+  };
+
   useEffect(() => {
     if (isEditMode && id) {
-      dispatch(getProductById(id));
+      dispatch(getProduct(id));
     }
   }, [dispatch, id, isEditMode]);
 
   useEffect(() => {
-    if (isEditMode && currentProduct) {
+    if (isEditMode && product) {
       setFormData({
-        name: currentProduct.name || "",
-        description: currentProduct.description || "",
-        price: currentProduct.price || "",
-        category: currentProduct.category || "",
-        brand: currentProduct.brand || "",
-        stock: currentProduct.stock || "",
-        specifications: currentProduct.specifications || "",
+        name: product.name || "",
+        description: product.description || "",
+        price: product.price || "",
+        category: product.category || "",
+        petType: product.petType || "all",
+        brand: product.brand || product.specifications?.brand || "",
+        stock: product.stock || "",
+        specifications: product.specifications?.material || "",
       });
     }
-  }, [currentProduct, isEditMode]);
+  }, [product, isEditMode]);
 
   useEffect(() => {
-    if (isSuccess) {
+    if (isSuccess && message) {
       setTimeout(() => {
-        navigate("/dashboard/products");
+        dispatch(resetProducts());
+        navigate(getRedirectPath());
       }, 1500);
     }
-  }, [isSuccess, navigate]);
+  }, [isSuccess, message, navigate, dispatch]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -99,6 +115,10 @@ const ProductForm = () => {
 
     if (!formData.category) {
       newErrors.category = "Category is required";
+    }
+
+    if (!formData.petType) {
+      newErrors.petType = "Pet type is required";
     }
 
     if (!formData.stock || formData.stock < 0) {
@@ -151,7 +171,7 @@ const ProductForm = () => {
                 <Alert
                   variant="danger"
                   dismissible
-                  onClose={() => dispatch(reset())}
+                  onClose={() => dispatch(resetProducts())}
                 >
                   {message}
                 </Alert>
@@ -258,7 +278,8 @@ const ProductForm = () => {
                         <option value="">Select category...</option>
                         {PRODUCT_CATEGORIES.map((category) => (
                           <option key={category} value={category}>
-                            {category}
+                            {category.charAt(0).toUpperCase() +
+                              category.slice(1)}
                           </option>
                         ))}
                       </Form.Select>
@@ -268,6 +289,31 @@ const ProductForm = () => {
                     </Form.Group>
                   </Col>
 
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>
+                        Pet Type <span className="text-danger">*</span>
+                      </Form.Label>
+                      <Form.Select
+                        name="petType"
+                        value={formData.petType}
+                        onChange={handleChange}
+                        isInvalid={!!errors.petType}
+                      >
+                        {PET_TYPES.map((type) => (
+                          <option key={type} value={type}>
+                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                          </option>
+                        ))}
+                      </Form.Select>
+                      <Form.Control.Feedback type="invalid">
+                        {errors.petType}
+                      </Form.Control.Feedback>
+                    </Form.Group>
+                  </Col>
+                </Row>
+
+                <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
                       <Form.Label>Brand</Form.Label>
@@ -280,19 +326,20 @@ const ProductForm = () => {
                       />
                     </Form.Group>
                   </Col>
-                </Row>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Specifications</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    name="specifications"
-                    value={formData.specifications}
-                    onChange={handleChange}
-                    placeholder="Technical specifications, features, etc..."
-                  />
-                </Form.Group>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Specifications</Form.Label>
+                      <Form.Control
+                        type="text"
+                        name="specifications"
+                        value={formData.specifications}
+                        onChange={handleChange}
+                        placeholder="Material, dimensions, etc."
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
 
                 <Form.Group className="mb-4">
                   <Form.Label>Product Images</Form.Label>
@@ -317,7 +364,7 @@ const ProductForm = () => {
                   </Button>
                   <Button
                     variant="outline-secondary"
-                    onClick={() => navigate("/dashboard/products")}
+                    onClick={() => navigate(getRedirectPath())}
                     disabled={isLoading}
                   >
                     Cancel

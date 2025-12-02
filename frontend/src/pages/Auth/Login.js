@@ -13,12 +13,15 @@ import { useDispatch } from "react-redux";
 import { login, reset } from "../../redux/slices/authSlice";
 import useAuth from "../../hooks/useAuth";
 import Loading from "../../components/common/Loading";
+import { isValidEmail } from "../../utils/validation";
 
 const Login = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+  const [errors, setErrors] = useState({});
+  const [validated, setValidated] = useState(false);
 
   const { email, password } = formData;
   const navigate = useNavigate();
@@ -44,13 +47,41 @@ const Login = () => {
       ...prevState,
       [e.target.name]: e.target.value,
     }));
+    // Clear error for this field when user types
+    if (errors[e.target.name]) {
+      setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!email || !email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!isValidEmail(email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+
+    if (!password) {
+      newErrors.password = "Password is required";
+    } else if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const onSubmit = (e) => {
     e.preventDefault();
+    setValidated(true);
+
+    if (!validateForm()) {
+      return;
+    }
 
     const userData = {
-      email,
+      email: email.trim(),
       password,
     };
 
@@ -82,7 +113,7 @@ const Login = () => {
                 </Alert>
               )}
 
-              <Form onSubmit={onSubmit}>
+              <Form onSubmit={onSubmit} noValidate>
                 <Form.Group className="mb-3">
                   <Form.Label>Email Address</Form.Label>
                   <Form.Control
@@ -91,8 +122,12 @@ const Login = () => {
                     value={email}
                     onChange={onChange}
                     placeholder="Enter your email"
-                    required
+                    isInvalid={validated && !!errors.email}
+                    isValid={validated && !errors.email && email}
                   />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.email}
+                  </Form.Control.Feedback>
                 </Form.Group>
 
                 <Form.Group className="mb-3">
@@ -103,8 +138,12 @@ const Login = () => {
                     value={password}
                     onChange={onChange}
                     placeholder="Enter your password"
-                    required
+                    isInvalid={validated && !!errors.password}
+                    isValid={validated && !errors.password && password}
                   />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.password}
+                  </Form.Control.Feedback>
                 </Form.Group>
 
                 <div className="d-flex justify-content-between align-items-center mb-3">

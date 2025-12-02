@@ -8,7 +8,7 @@ export const createAppointment = async (appointmentData) => {
 
 // Get user appointments
 export const getUserAppointments = async () => {
-  const response = await axios.get("/api/appointments/my");
+  const response = await axios.get("/api/appointments/my-appointments");
   return response.data;
 };
 
@@ -20,7 +20,7 @@ export const getAppointment = async (id) => {
 
 // Cancel appointment
 export const cancelAppointment = async (id) => {
-  const response = await axios.put(`/api/appointments/${id}/cancel`);
+  const response = await axios.patch(`/api/appointments/${id}/cancel`);
   return response.data;
 };
 

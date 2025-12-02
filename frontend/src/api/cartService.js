@@ -8,24 +8,43 @@ export const getCart = async () => {
 
 // Add to cart
 export const addToCart = async (cartData) => {
-  const response = await axios.post("/api/cart/add", cartData);
+  // Backend expects productId, not product
+  const data = {
+    productId: cartData.productId || cartData.product,
+    quantity: cartData.quantity || 1,
+  };
+  const response = await axios.post("/api/cart/items", data);
   return response.data;
 };
 
 // Update cart item
-export const updateCartItem = async (itemId, quantity) => {
-  const response = await axios.put(`/api/cart/update/${itemId}`, { quantity });
+export const updateCartItem = async (productId, quantity) => {
+  const response = await axios.put(`/api/cart/items/${productId}`, {
+    quantity,
+  });
   return response.data;
 };
 
 // Remove from cart
-export const removeFromCart = async (itemId) => {
-  const response = await axios.delete(`/api/cart/remove/${itemId}`);
+export const removeFromCart = async (productId) => {
+  const response = await axios.delete(`/api/cart/items/${productId}`);
   return response.data;
 };
 
 // Clear cart
 export const clearCart = async () => {
-  const response = await axios.delete("/api/cart/clear");
+  const response = await axios.delete("/api/cart");
+  return response.data;
+};
+
+// Get cart count
+export const getCartCount = async () => {
+  const response = await axios.get("/api/cart/count");
+  return response.data;
+};
+
+// Validate cart (check stock availability)
+export const validateCart = async () => {
+  const response = await axios.get("/api/cart/validate");
   return response.data;
 };

@@ -19,17 +19,20 @@ const CheckoutPage = () => {
     isSuccess,
   } = useSelector((state) => state.orders);
 
-  const [shippingInfo, setShippingInfo] = useState({
+  const [shippingAddress, setShippingAddress] = useState({
     fullName: "",
-    address: "",
+    phone: "",
+    street: "",
     city: "",
     state: "",
-    postalCode: "",
-    phone: "",
+    zipCode: "",
+    country: "India",
   });
 
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [validated, setValidated] = useState(false);
 
   useEffect(() => {
     dispatch(getCart());
@@ -52,25 +55,79 @@ const CheckoutPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setShippingInfo((prev) => ({ ...prev, [name]: value }));
+    setShippingAddress((prev) => ({ ...prev, [name]: value }));
+    // Clear error for this field when user types
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+    setError("");
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Full Name validation
+    if (
+      !shippingAddress.fullName ||
+      shippingAddress.fullName.trim().length < 2
+    ) {
+      newErrors.fullName = "Full name must be at least 2 characters";
+    }
+
+    // Phone validation (10 digits)
+    if (!shippingAddress.phone) {
+      newErrors.phone = "Phone number is required";
+    } else if (!/^\d{10}$/.test(shippingAddress.phone)) {
+      newErrors.phone = "Please enter a valid 10-digit phone number";
+    }
+
+    // Address validation
+    if (!shippingAddress.street || shippingAddress.street.trim().length < 10) {
+      newErrors.street =
+        "Please enter a complete address (at least 10 characters)";
+    }
+
+    // City validation
+    if (!shippingAddress.city || shippingAddress.city.trim().length < 2) {
+      newErrors.city = "City is required";
+    }
+
+    // State validation
+    if (!shippingAddress.state || shippingAddress.state.trim().length < 2) {
+      newErrors.state = "State is required";
+    }
+
+    // ZIP code validation (6 digits for India)
+    if (!shippingAddress.zipCode) {
+      newErrors.zipCode = "PIN code is required";
+    } else if (!/^\d{6}$/.test(shippingAddress.zipCode)) {
+      newErrors.zipCode = "Please enter a valid 6-digit PIN code";
+    }
+
+    setFieldErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setError("");
+    setValidated(true);
 
-    if (!shippingInfo.fullName || !shippingInfo.address || !shippingInfo.city) {
-      setError("Please fill all required shipping details.");
+    if (!validateForm()) {
+      setError("Please fix the errors in the form before submitting.");
       return;
     }
 
     const orderData = {
-      items: items.map((item) => ({
-        product: item.product._id,
-        quantity: item.quantity,
-      })),
-      totalAmount: total,
-      shippingInfo,
+      shippingAddress: {
+        fullName: shippingAddress.fullName.trim(),
+        phone: shippingAddress.phone.trim(),
+        street: shippingAddress.street.trim(),
+        city: shippingAddress.city.trim(),
+        state: shippingAddress.state.trim(),
+        zipCode: shippingAddress.zipCode.trim(),
+        country: shippingAddress.country || "India",
+      },
       paymentMethod,
     };
 
@@ -82,42 +139,92 @@ const CheckoutPage = () => {
       <div className="row">
         <div className="col-lg-7">
           <h2 className="mb-4">Checkout</h2>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <div className="card mb-3">
               <div className="card-body">
                 <h5 className="card-title">Shipping Information</h5>
                 <div className="row g-3">
-                  <div className="col-md-12">
+                  <div className="col-md-6">
                     <label htmlFor="fullName" className="form-label">
                       Full Name *
                     </label>
                     <input
                       type="text"
-                      className="form-control"
+                      className={`form-control ${
+                        validated
+                          ? fieldErrors.fullName
+                            ? "is-invalid"
+                            : shippingAddress.fullName
+                            ? "is-valid"
+                            : ""
+                          : ""
+                      }`}
                       id="fullName"
                       name="fullName"
-                      value={shippingInfo.fullName}
+                      value={shippingAddress.fullName}
                       onChange={handleChange}
                       placeholder="John Doe"
-                      aria-required="true"
-                      required
                     />
+                    {fieldErrors.fullName && (
+                      <div className="invalid-feedback">
+                        {fieldErrors.fullName}
+                      </div>
+                    )}
+                  </div>
+                  <div className="col-md-6">
+                    <label htmlFor="phone" className="form-label">
+                      Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      className={`form-control ${
+                        validated
+                          ? fieldErrors.phone
+                            ? "is-invalid"
+                            : shippingAddress.phone
+                            ? "is-valid"
+                            : ""
+                          : ""
+                      }`}
+                      id="phone"
+                      name="phone"
+                      value={shippingAddress.phone}
+                      onChange={handleChange}
+                      placeholder="9876543210"
+                      maxLength="10"
+                    />
+                    {fieldErrors.phone && (
+                      <div className="invalid-feedback">
+                        {fieldErrors.phone}
+                      </div>
+                    )}
                   </div>
                   <div className="col-md-12">
-                    <label htmlFor="address" className="form-label">
-                      Address *
+                    <label htmlFor="street" className="form-label">
+                      Complete Address *
                     </label>
                     <textarea
-                      className="form-control"
-                      id="address"
-                      rows="2"
-                      name="address"
-                      value={shippingInfo.address}
+                      className={`form-control ${
+                        validated
+                          ? fieldErrors.street
+                            ? "is-invalid"
+                            : shippingAddress.street
+                            ? "is-valid"
+                            : ""
+                          : ""
+                      }`}
+                      id="street"
+                      rows="3"
+                      name="street"
+                      value={shippingAddress.street}
                       onChange={handleChange}
-                      placeholder="123 Main Street, Apt 4B"
-                      aria-required="true"
-                      required
+                      placeholder="House No., Street Name, Area, Landmark"
                     />
+                    {fieldErrors.street && (
+                      <div className="invalid-feedback">
+                        {fieldErrors.street}
+                      </div>
+                    )}
                   </div>
                   <div className="col-md-6">
                     <label htmlFor="city" className="form-label">
@@ -125,44 +232,83 @@ const CheckoutPage = () => {
                     </label>
                     <input
                       type="text"
-                      className="form-control"
+                      className={`form-control ${
+                        validated
+                          ? fieldErrors.city
+                            ? "is-invalid"
+                            : shippingAddress.city
+                            ? "is-valid"
+                            : ""
+                          : ""
+                      }`}
                       id="city"
                       name="city"
-                      value={shippingInfo.city}
+                      value={shippingAddress.city}
                       onChange={handleChange}
-                      placeholder="New York"
-                      aria-required="true"
-                      required
+                      placeholder="Mumbai"
                     />
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label">State</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="state"
-                      value={shippingInfo.state}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label">Postal Code</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="postalCode"
-                      value={shippingInfo.postalCode}
-                      onChange={handleChange}
-                    />
+                    {fieldErrors.city && (
+                      <div className="invalid-feedback">{fieldErrors.city}</div>
+                    )}
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label">Phone</label>
+                    <label className="form-label">State *</label>
                     <input
-                      type="tel"
-                      className="form-control"
-                      name="phone"
-                      value={shippingInfo.phone}
+                      type="text"
+                      className={`form-control ${
+                        validated
+                          ? fieldErrors.state
+                            ? "is-invalid"
+                            : shippingAddress.state
+                            ? "is-valid"
+                            : ""
+                          : ""
+                      }`}
+                      name="state"
+                      value={shippingAddress.state}
                       onChange={handleChange}
+                      placeholder="Maharashtra"
+                    />
+                    {fieldErrors.state && (
+                      <div className="invalid-feedback">
+                        {fieldErrors.state}
+                      </div>
+                    )}
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">PIN Code *</label>
+                    <input
+                      type="text"
+                      className={`form-control ${
+                        validated
+                          ? fieldErrors.zipCode
+                            ? "is-invalid"
+                            : shippingAddress.zipCode
+                            ? "is-valid"
+                            : ""
+                          : ""
+                      }`}
+                      name="zipCode"
+                      value={shippingAddress.zipCode}
+                      onChange={handleChange}
+                      placeholder="400001"
+                      maxLength="6"
+                    />
+                    {fieldErrors.zipCode && (
+                      <div className="invalid-feedback">
+                        {fieldErrors.zipCode}
+                      </div>
+                    )}
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">Country</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="country"
+                      value={shippingAddress.country}
+                      onChange={handleChange}
+                      readOnly
                     />
                   </div>
                 </div>
@@ -172,7 +318,7 @@ const CheckoutPage = () => {
             <div className="card mb-3">
               <div className="card-body">
                 <h5 className="card-title">Payment Method</h5>
-                <div className="form-check">
+                <div className="form-check mb-2">
                   <input
                     className="form-check-input"
                     type="radio"
@@ -186,18 +332,46 @@ const CheckoutPage = () => {
                     Cash on Delivery (COD)
                   </label>
                 </div>
+                <div className="form-check mb-2">
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="paymentMethod"
+                    id="card"
+                    value="card"
+                    checked={paymentMethod === "card"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  />
+                  <label className="form-check-label" htmlFor="card">
+                    Credit/Debit Card (Coming Soon)
+                  </label>
+                </div>
+                <div className="form-check mb-2">
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="paymentMethod"
+                    id="upi"
+                    value="upi"
+                    checked={paymentMethod === "upi"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  />
+                  <label className="form-check-label" htmlFor="upi">
+                    UPI (Coming Soon)
+                  </label>
+                </div>
                 <div className="form-check">
                   <input
                     className="form-check-input"
                     type="radio"
                     name="paymentMethod"
-                    id="online"
-                    value="online"
-                    checked={paymentMethod === "online"}
+                    id="netbanking"
+                    value="netbanking"
+                    checked={paymentMethod === "netbanking"}
                     onChange={(e) => setPaymentMethod(e.target.value)}
                   />
-                  <label className="form-check-label" htmlFor="online">
-                    Online Payment (coming soon)
+                  <label className="form-check-label" htmlFor="netbanking">
+                    Net Banking (Coming Soon)
                   </label>
                 </div>
               </div>

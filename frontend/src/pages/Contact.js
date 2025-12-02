@@ -28,6 +28,8 @@ const Contact = () => {
     subject: "",
     message: "",
   });
+  const [errors, setErrors] = useState({});
+  const [validated, setValidated] = useState(false);
 
   useEffect(() => {
     // Reset message state when component mounts
@@ -38,6 +40,8 @@ const Contact = () => {
     if (isSuccess) {
       // Clear form on success
       setFormData({ subject: "", message: "" });
+      setErrors({});
+      setValidated(false);
       // Reset success state after 5 seconds
       const timer = setTimeout(() => {
         dispatch(resetMessages());
@@ -51,11 +55,45 @@ const Contact = () => {
       ...formData,
       [e.target.name]: e.target.value,
     });
+    // Clear error for this field when user types
+    if (errors[e.target.name]) {
+      setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.subject || formData.subject.trim().length < 3) {
+      newErrors.subject = "Subject must be at least 3 characters";
+    } else if (formData.subject.trim().length > 100) {
+      newErrors.subject = "Subject must be less than 100 characters";
+    }
+
+    if (!formData.message || formData.message.trim().length < 10) {
+      newErrors.message = "Message must be at least 10 characters";
+    } else if (formData.message.trim().length > 1000) {
+      newErrors.message = "Message must be less than 1000 characters";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    dispatch(sendContactMessage(formData));
+    setValidated(true);
+
+    if (!validateForm()) {
+      return;
+    }
+
+    dispatch(
+      sendContactMessage({
+        subject: formData.subject.trim(),
+        message: formData.message.trim(),
+      })
+    );
   };
 
   return (
@@ -107,7 +145,7 @@ const Contact = () => {
               )}
 
               {isAuthenticated ? (
-                <Form onSubmit={handleSubmit}>
+                <Form onSubmit={handleSubmit} noValidate>
                   <div className="mb-3 p-3 bg-light rounded">
                     <small className="text-muted">Sending as:</small>
                     <div className="fw-bold">{user?.name}</div>
@@ -122,8 +160,12 @@ const Contact = () => {
                       value={formData.subject}
                       onChange={handleChange}
                       placeholder="What is this regarding?"
-                      required
+                      isInvalid={validated && !!errors.subject}
+                      isValid={validated && !errors.subject && formData.subject}
                     />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.subject}
+                    </Form.Control.Feedback>
                   </Form.Group>
 
                   <Form.Group className="mb-4">
@@ -135,8 +177,15 @@ const Contact = () => {
                       value={formData.message}
                       onChange={handleChange}
                       placeholder="Tell us more about your inquiry..."
-                      required
+                      isInvalid={validated && !!errors.message}
+                      isValid={validated && !errors.message && formData.message}
                     />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.message}
+                    </Form.Control.Feedback>
+                    <Form.Text className="text-muted">
+                      {formData.message.length}/1000 characters
+                    </Form.Text>
                   </Form.Group>
 
                   <Button

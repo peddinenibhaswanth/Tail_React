@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Container, Row, Col, Form, Button, InputGroup } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
 import { getProducts, resetProducts } from "../../redux/slices/productSlice";
 import ProductCard from "../../components/common/ProductCard";
 import Loading from "../../components/common/Loading";
 import { PRODUCT_CATEGORIES } from "../../utils/constants";
-import useDebounce from "../../hooks/useDebounce";
 
 const ProductList = () => {
   const dispatch = useDispatch();
@@ -19,24 +18,45 @@ const ProductList = () => {
     minPrice: "",
     maxPrice: "",
     inStock: false,
-    sortBy: "createdAt",
   });
 
-  const debouncedSearch = useDebounce(filters.search, 500);
+  // Track if this is initial load - use ref to avoid re-renders
+  const initialLoadRef = useRef(true);
+  const [showInitialLoading, setShowInitialLoading] = useState(true);
 
+  // Debounce timer ref
+  const debounceRef = useRef(null);
+
+  // Fetch products when filters change
   useEffect(() => {
-    const queryFilters = { ...filters, search: debouncedSearch };
-    dispatch(getProducts(queryFilters));
-    return () => dispatch(resetProducts());
-  }, [
-    dispatch,
-    debouncedSearch,
-    filters.category,
-    filters.minPrice,
-    filters.maxPrice,
-    filters.inStock,
-    filters.sortBy,
-  ]);
+    // Clear existing timer
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    // Debounce the API call
+    debounceRef.current = setTimeout(() => {
+      dispatch(getProducts(filters)).then(() => {
+        if (initialLoadRef.current) {
+          initialLoadRef.current = false;
+          setShowInitialLoading(false);
+        }
+      });
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [dispatch, filters]);
+
+  // Reset on unmount only
+  useEffect(() => {
+    return () => {
+      dispatch(resetProducts());
+    };
+  }, [dispatch]);
 
   const handleFilterChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -53,11 +73,11 @@ const ProductList = () => {
       minPrice: "",
       maxPrice: "",
       inStock: false,
-      sortBy: "createdAt",
     });
   };
 
-  if (isLoading) {
+  // Only show full loading screen on initial load
+  if (showInitialLoading && isLoading) {
     return <Loading />;
   }
 
@@ -134,26 +154,7 @@ const ProductList = () => {
             </Form.Group>
           </Col>
 
-          <Col md={3}>
-            <Form.Group>
-              <Form.Label>Sort By</Form.Label>
-              <Form.Select
-                name="sortBy"
-                value={filters.sortBy}
-                onChange={handleFilterChange}
-              >
-                <option value="createdAt">Newest First</option>
-                <option value="-createdAt">Oldest First</option>
-                <option value="price">Price: Low to High</option>
-                <option value="-price">Price: High to Low</option>
-                <option value="name">Name: A to Z</option>
-                <option value="-name">Name: Z to A</option>
-                <option value="-rating">Top Rated</option>
-              </Form.Select>
-            </Form.Group>
-          </Col>
-
-          <Col md={3}>
+          <Col md={2}>
             <Form.Group className="mt-4">
               <Form.Check
                 type="checkbox"

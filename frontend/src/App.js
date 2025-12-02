@@ -6,6 +6,7 @@ import Navbar from "./components/common/Navbar";
 import Footer from "./components/common/Footer";
 import Alert from "./components/common/Alert";
 import ErrorBoundary from "./components/common/ErrorBoundary";
+import { NotificationProvider } from "./context/NotificationContext";
 import { getCart } from "./redux/slices/cartSlice";
 import { getCurrentUser } from "./redux/slices/authSlice";
 import useAuth from "./hooks/useAuth";
@@ -33,16 +34,18 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <Router>
-        <div className="App d-flex flex-column min-vh-100">
-          <Navbar />
-          <Alert />
-          <main className="flex-grow-1" role="main">
-            <AppRoutes />
-          </main>
-          <Footer />
-        </div>
-      </Router>
+      <NotificationProvider>
+        <Router>
+          <div className="App d-flex flex-column min-vh-100">
+            <Navbar />
+            <Alert />
+            <main className="flex-grow-1" role="main">
+              <AppRoutes />
+            </main>
+            <Footer />
+          </div>
+        </Router>
+      </NotificationProvider>
     </ErrorBoundary>
   );
 }

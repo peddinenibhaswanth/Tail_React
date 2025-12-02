@@ -36,10 +36,17 @@ const OrderSuccess = () => {
             Your order has been placed successfully.
           </p>
           <p className="mb-1">
-            <strong>Order ID:</strong> {order._id}
+            <strong>Order #:</strong>{" "}
+            {order.orderNumber || order._id?.slice(-8)}
           </p>
           <p className="mb-1">
-            <strong>Total Amount:</strong> ₹{order.totalAmount?.toFixed(2)}
+            <strong>Total Amount:</strong> ₹{(order.total || 0).toFixed(2)}
+          </p>
+          <p className="mb-1">
+            <strong>Status:</strong>{" "}
+            <span className="badge bg-warning text-uppercase">
+              {order.status}
+            </span>
           </p>
           <p className="mb-4">We have sent the order details to your email.</p>
           <div className="d-flex justify-content-center gap-3">

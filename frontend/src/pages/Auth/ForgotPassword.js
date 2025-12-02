@@ -16,9 +16,21 @@ const ForgotPassword = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [validated, setValidated] = useState(false);
+
+  const handleEmailChange = (e) => {
+    setEmail(e.target.value);
+    if (error) setError("");
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    setValidated(true);
+
+    if (!email || !email.trim()) {
+      setError("Email is required");
+      return;
+    }
 
     if (!isValidEmail(email)) {
       setError("Please enter a valid email address");
@@ -75,16 +87,22 @@ const ForgotPassword = () => {
               )}
 
               {!success && (
-                <Form onSubmit={onSubmit}>
+                <Form onSubmit={onSubmit} noValidate>
                   <Form.Group className="mb-3">
                     <Form.Label>Email Address</Form.Label>
                     <Form.Control
                       type="email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={handleEmailChange}
                       placeholder="Enter your registered email"
-                      required
+                      isInvalid={validated && !!error}
+                      isValid={
+                        validated && !error && email && isValidEmail(email)
+                      }
                     />
+                    <Form.Control.Feedback type="invalid">
+                      {error}
+                    </Form.Control.Feedback>
                   </Form.Group>
 
                   <Button

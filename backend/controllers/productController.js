@@ -25,8 +25,9 @@ exports.getAllProducts = async (req, res) => {
 
     const query = {};
 
-    if (category) query.category = category;
-    if (petType) query.petType = petType;
+    // Case-insensitive category matching using regex
+    if (category) query.category = new RegExp(`^${category}$`, "i");
+    if (petType) query.petType = new RegExp(`^${petType}$`, "i");
     if (seller) query.seller = seller;
     if (featured) query.featured = featured === "true";
     if (onSale) query.onSale = onSale === "true";
@@ -118,8 +119,20 @@ exports.createProduct = async (req, res) => {
   try {
     const productData = {
       ...req.body,
-      seller: req.user.role === "seller" ? req.user._id : req.body.seller,
+      seller:
+        req.user.role === "seller"
+          ? req.user._id
+          : req.body.seller || req.user._id,
     };
+
+    // Handle specifications object
+    if (productData.brand || productData.specifications) {
+      productData.specifications = {
+        brand: productData.brand || "",
+        material: productData.specifications || "",
+      };
+      delete productData.brand;
+    }
 
     if (req.files && req.files.length > 0) {
       productData.images = req.files.map((file) => file.filename);
