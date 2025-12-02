@@ -98,14 +98,22 @@ const MyAppointments = () => {
                       </div>
                       <div className="text-muted">
                         <i className="bi bi-clock me-2"></i>
-                        {appointment.timeSlot}
+                        {appointment.timeSlot?.start
+                          ? `${appointment.timeSlot.start} - ${appointment.timeSlot.end}`
+                          : appointment.timeSlot || "N/A"}
                       </div>
                     </Col>
 
                     <Col md={3}>
                       <div className="mb-1">
+                        <i className="bi bi-stethoscope me-2"></i>
+                        Dr. {appointment.veterinary?.name || "N/A"}
+                      </div>
+                      <div className="mb-1">
                         <i className="bi bi-gear me-2"></i>
-                        {appointment.service}
+                        {appointment.reason ||
+                          appointment.service ||
+                          "General Checkup"}
                       </div>
                       <div>
                         <Badge bg={getStatusVariant(appointment.status)}>

@@ -19,7 +19,22 @@ const appointmentSchema = new mongoose.Schema({
   petType: {
     type: String,
     required: true,
-    enum: ["dog", "cat", "bird", "rabbit", "other"],
+    enum: [
+      "dog",
+      "cat",
+      "bird",
+      "rabbit",
+      "fish",
+      "hamster",
+      "other",
+      "Dog",
+      "Cat",
+      "Bird",
+      "Rabbit",
+      "Fish",
+      "Hamster",
+      "Other",
+    ],
   },
   date: {
     type: Date,
