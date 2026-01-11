@@ -1,15 +1,14 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const session = require("express-session");
-const passport = require("passport");
-const MongoStore = require("connect-mongo");
 const path = require("path");
+const helmet = require("helmet");
+const compression = require("compression");
+const rateLimit = require("express-rate-limit");
 require("dotenv").config();
 
 // Import configurations
 const connectDB = require("./config/db");
-require("./config/passport")(passport);
 
 // Create Express app
 const app = express();
@@ -17,7 +16,65 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
-// Middleware
+// ===========================================
+// SECURITY MIDDLEWARE - Helmet
+// ===========================================
+// Helmet sets various HTTP headers for security
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow images to be served cross-origin
+    contentSecurityPolicy: false, // Disable CSP for development (enable in production)
+  })
+);
+
+// ===========================================
+// COMPRESSION MIDDLEWARE
+// ===========================================
+// Compresses response bodies for faster transfer
+app.use(
+  compression({
+    level: 6, // Compression level (1-9, 6 is default)
+    threshold: 1024, // Only compress responses larger than 1KB
+    filter: (req, res) => {
+      // Don't compress if client doesn't accept it
+      if (req.headers["x-no-compression"]) {
+        return false;
+      }
+      return compression.filter(req, res);
+    },
+  })
+);
+
+// ===========================================
+// RATE LIMITING MIDDLEWARE
+// ===========================================
+// General API rate limiter - 100 requests per 15 minutes
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: {
+    success: false,
+    message: "Too many requests from this IP, please try again after 15 minutes",
+  },
+  standardHeaders: true, // Return rate limit info in headers
+  legacyHeaders: false, // Disable X-RateLimit-* headers
+});
+
+// Stricter rate limiter for authentication routes - 5 attempts per 15 minutes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 login/register attempts per windowMs
+  message: {
+    success: false,
+    message: "Too many authentication attempts, please try again after 15 minutes",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// ===========================================
+// CORS MIDDLEWARE
+// ===========================================
 app.use(
   cors({
     origin: [
@@ -28,36 +85,33 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Session configuration
-app.use(
-  session({
-    secret:
-      process.env.SESSION_SECRET || "your-secret-key-change-in-production",
-    resave: false,
-    saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI,
-      touchAfter: 24 * 3600, // lazy session update
-    }),
-    cookie: {
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-    },
-  })
-);
+// ===========================================
+// BODY PARSING MIDDLEWARE
+// ===========================================
+app.use(express.json({ limit: "10mb" })); // Limit JSON body size
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Passport middleware
-app.use(passport.initialize());
-app.use(passport.session());
+// NOTE: With JWT authentication, we don't need express-session or passport session middleware
+// JWT is stateless - each request carries the token in the Authorization header
+// The token is verified in the auth middleware (backend/middleware/auth.js)
 
 // Serve static files (uploads)
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Routes
+// ===========================================
+// APPLY RATE LIMITERS TO ROUTES
+// ===========================================
+// Apply stricter rate limiting to auth routes (login/register)
+app.use("/api/auth/login", authLimiter);
+app.use("/api/auth/register", authLimiter);
+
+// Apply general rate limiting to all API routes
+app.use("/api", apiLimiter);
+
+// ===========================================
+// ROUTES
+// ===========================================
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/pets", require("./routes/petRoutes"));
 app.use("/api/products", require("./routes/productRoutes"));
