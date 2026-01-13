@@ -9,6 +9,7 @@ const {
 const {
   validateAppointment,
   validateAppointmentStatus,
+  validateAppointmentTimeSlot,
 } = require("../middleware/validators");
 
 // Public routes
@@ -16,7 +17,14 @@ router.get("/veterinaries", appointmentController.getVeterinaries);
 router.get("/available-slots", appointmentController.getAvailableSlots);
 
 // Protected routes (require authentication) with validation
-router.post("/", isAuthenticated, validateAppointment, appointmentController.createAppointment);
+// validateAppointmentTimeSlot checks if the slot is in vet's available schedule
+router.post(
+  "/",
+  isAuthenticated,
+  validateAppointment,
+  validateAppointmentTimeSlot,
+  appointmentController.createAppointment
+);
 router.get(
   "/my-appointments",
   isAuthenticated,
