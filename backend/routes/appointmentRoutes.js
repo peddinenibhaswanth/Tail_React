@@ -6,20 +6,24 @@ const {
   isVeterinary,
   isAdminOrCoAdmin,
 } = require("../middleware/auth");
+const {
+  validateAppointment,
+  validateAppointmentStatus,
+} = require("../middleware/validators");
 
 // Public routes
 router.get("/veterinaries", appointmentController.getVeterinaries);
 router.get("/available-slots", appointmentController.getAvailableSlots);
 
-// Protected routes (require authentication)
-router.post("/", isAuthenticated, appointmentController.createAppointment);
+// Protected routes (require authentication) with validation
+router.post("/", isAuthenticated, validateAppointment, appointmentController.createAppointment);
 router.get(
   "/my-appointments",
   isAuthenticated,
   appointmentController.getMyAppointments
 );
 
-// Veterinary routes
+// Veterinary routes with validation
 router.get(
   "/vet/appointments",
   isAuthenticated,
@@ -30,6 +34,7 @@ router.patch(
   "/:id/status",
   isAuthenticated,
   isVeterinary,
+  validateAppointmentStatus,
   appointmentController.updateAppointmentStatus
 );
 
