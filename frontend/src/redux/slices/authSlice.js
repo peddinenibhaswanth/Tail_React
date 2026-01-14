@@ -3,10 +3,13 @@ import * as authService from "../../api/authService";
 
 // Load user from localStorage
 const user = JSON.parse(localStorage.getItem("user"));
+// Check if JWT token exists
+const token = localStorage.getItem("token");
 
 const initialState = {
   user: user || null,
-  isAuthenticated: !!user,
+  token: token || null,
+  isAuthenticated: !!(user && token), // Both user and token must exist
   isLoading: false,
   isSuccess: false,
   isError: false,
@@ -56,9 +59,10 @@ export const getCurrentUser = createAsyncThunk(
     try {
       return await authService.getCurrentUser();
     } catch (error) {
-      // Don't reject on 401 - just means not logged in
-      if (error.response?.status === 401) {
+      // Don't reject on 401 - just means not logged in or token expired
+      if (error.response?.status === 401 || error.status === 401) {
         localStorage.removeItem("user");
+        localStorage.removeItem("token"); // Also remove JWT token
         return thunkAPI.rejectWithValue("Not authenticated");
       }
       const message =
@@ -129,8 +133,10 @@ export const authSlice = createSlice({
     },
     clearAuth: (state) => {
       state.user = null;
+      state.token = null;
       state.isAuthenticated = false;
       localStorage.removeItem("user");
+      localStorage.removeItem("token");
     },
   },
   extraReducers: (builder) => {
@@ -144,6 +150,7 @@ export const authSlice = createSlice({
         state.isSuccess = true;
         state.isAuthenticated = true;
         state.user = action.payload.user;
+        state.token = action.payload.token; // Store JWT token in state
         state.message = action.payload.message || "Registration successful";
       })
       .addCase(register.rejected, (state, action) => {
@@ -151,6 +158,7 @@ export const authSlice = createSlice({
         state.isError = true;
         state.message = action.payload;
         state.user = null;
+        state.token = null;
         state.isAuthenticated = false;
       })
       // Login
@@ -162,6 +170,7 @@ export const authSlice = createSlice({
         state.isSuccess = true;
         state.isAuthenticated = true;
         state.user = action.payload.user;
+        state.token = action.payload.token; // Store JWT token in state
         state.message = "Login successful";
       })
       .addCase(login.rejected, (state, action) => {
@@ -169,6 +178,7 @@ export const authSlice = createSlice({
         state.isError = true;
         state.message = action.payload;
         state.user = null;
+        state.token = null;
         state.isAuthenticated = false;
       })
       // Get current user
@@ -184,12 +194,15 @@ export const authSlice = createSlice({
       .addCase(getCurrentUser.rejected, (state, action) => {
         state.isLoading = false;
         state.user = null;
+        state.token = null;
         state.isAuthenticated = false;
         localStorage.removeItem("user");
+        localStorage.removeItem("token");
       })
       // Logout
       .addCase(logout.fulfilled, (state) => {
         state.user = null;
+        state.token = null;
         state.isAuthenticated = false;
         state.isSuccess = false;
         state.message = "";

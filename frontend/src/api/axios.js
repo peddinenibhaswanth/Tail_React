@@ -8,10 +8,11 @@ const axiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // Important for session-based authentication
+  withCredentials: true, // Keep for CORS support
 });
 
-// Request interceptor - Add auth token
+// Request interceptor - Add JWT token to every request
+// This automatically attaches the token stored in localStorage to the Authorization header
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
