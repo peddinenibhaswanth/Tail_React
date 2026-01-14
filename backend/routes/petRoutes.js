@@ -3,6 +3,7 @@ const router = express.Router();
 const petController = require("../controllers/petController");
 const { isAuthenticated, isAdminOrCoAdmin } = require("../middleware/auth");
 const { uploadPetImages } = require("../middleware/upload");
+const { validatePet } = require("../middleware/validators");
 const AdoptionApplication = require("../models/AdoptionApplication");
 const Pet = require("../models/Pet");
 
@@ -140,12 +141,13 @@ router.post("/adopt", isAuthenticated, async (req, res) => {
   }
 });
 
-// Protected routes (require authentication)
+// Protected routes (require authentication) with validation
 router.post(
   "/",
   isAuthenticated,
   isAdminOrCoAdmin,
   uploadPetImages,
+  validatePet,
   petController.createPet
 );
 router.put(

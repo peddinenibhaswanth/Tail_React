@@ -6,6 +6,7 @@ const {
   isSellerOrAdmin,
   isAdminOrCoAdmin,
 } = require("../middleware/auth");
+const { validateOrderStatus } = require("../middleware/validators");
 
 // Seller routes (must come before /:id to prevent route conflicts)
 router.get(
@@ -40,6 +41,7 @@ router.patch(
   "/:id/status",
   isAuthenticated,
   isSellerOrAdmin,
+  validateOrderStatus,
   orderController.updateOrderStatus
 );
 router.patch(

@@ -1,5 +1,16 @@
 const User = require("../models/User");
 const passport = require("passport");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+
+// JWT Secret and Expiry from environment or defaults
+const JWT_SECRET = process.env.JWT_SECRET || "your-jwt-secret-key-change-in-production";
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d"; // Token valid for 7 days
+
+// Helper function to generate JWT token
+const generateToken = (userId) => {
+  return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+};
 
 exports.register = async (req, res) => {
   try {
@@ -64,22 +75,18 @@ exports.register = async (req, res) => {
     const newUser = new User(userData);
     await newUser.save();
 
-    req.login(newUser, (err) => {
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          message: "Registration successful but login failed",
-        });
-      }
+    // Generate JWT token for the new user
+    const token = generateToken(newUser._id);
 
-      return res.status(201).json({
-        success: true,
-        message:
-          role === "customer"
-            ? "Registration successful"
-            : "Registration successful. Your account is pending approval.",
-        user: newUser,
-      });
+    // Return user data and token (no session needed)
+    return res.status(201).json({
+      success: true,
+      message:
+        role === "customer"
+          ? "Registration successful"
+          : "Registration successful. Your account is pending approval.",
+      user: newUser,
+      token: token, // JWT token for authentication
     });
   } catch (error) {
     console.error("Registration error:", error);
@@ -91,69 +98,83 @@ exports.register = async (req, res) => {
   }
 };
 
-exports.login = (req, res, next) => {
-  passport.authenticate("local", (err, user, info) => {
-    if (err) {
-      return res.status(500).json({
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
         success: false,
-        message: "Error during login",
-        error: err.message,
+        message: "Please provide email and password",
       });
     }
+
+    // Find user by email (include password for comparison)
+    const user = await User.findOne({ email: email.toLowerCase() });
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: info.message || "Invalid credentials",
+        message: "No user found with that email",
       });
     }
 
-    req.login(user, (err) => {
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          message: "Error during login",
-          error: err.message,
-        });
-      }
-
-      return res.json({
-        success: true,
-        message: "Login successful",
-        user: user,
+    // Check if seller/veterinary is approved
+    if (
+      (user.role === "seller" || user.role === "veterinary") &&
+      !user.isApproved
+    ) {
+      return res.status(401).json({
+        success: false,
+        message: "Your account is pending approval. Please wait for admin approval.",
       });
+    }
+
+    // Compare password using bcrypt
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Incorrect password",
+      });
+    }
+
+    // Generate JWT token
+    const token = generateToken(user._id);
+
+    // Return user data (without password) and token
+    const userResponse = user.toJSON(); // This removes password due to schema method
+
+    return res.json({
+      success: true,
+      message: "Login successful",
+      user: userResponse,
+      token: token, // JWT token for authentication
     });
-  })(req, res, next);
+  } catch (error) {
+    console.error("Login error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error during login",
+      error: error.message,
+    });
+  }
 };
 
 exports.logout = (req, res) => {
-  req.logout((err) => {
-    if (err) {
-      return res.status(500).json({
-        success: false,
-        message: "Error during logout",
-      });
-    }
-
-    req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          message: "Error destroying session",
-        });
-      }
-
-      res.clearCookie("connect.sid");
-      return res.json({
-        success: true,
-        message: "Logout successful",
-      });
-    });
+  // With JWT, logout is handled on the client side by removing the token
+  // Server just acknowledges the logout request
+  return res.json({
+    success: true,
+    message: "Logout successful",
   });
 };
 
 exports.getCurrentUser = (req, res) => {
-  if (req.isAuthenticated()) {
+  // req.user is set by JWT middleware if token is valid
+  if (req.user) {
     return res.json({
       success: true,
       user: req.user,
@@ -289,27 +310,10 @@ exports.deleteAccount = async (req, res) => {
 
     await User.findByIdAndDelete(userId);
 
-    req.logout((err) => {
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          message: "Account deleted but logout failed",
-        });
-      }
-
-      req.session.destroy((err) => {
-        if (err) {
-          return res.status(500).json({
-            success: false,
-            message: "Account deleted but session destruction failed",
-          });
-        }
-
-        res.json({
-          success: true,
-          message: "Account deleted successfully",
-        });
-      });
+    // With JWT, just confirm deletion - client will remove token
+    return res.json({
+      success: true,
+      message: "Account deleted successfully",
     });
   } catch (error) {
     res.status(500).json({

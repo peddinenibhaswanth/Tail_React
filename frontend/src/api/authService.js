@@ -8,8 +8,15 @@ export const register = async (userData) => {
     password2: userData.password, // Backend expects password2 for confirmation
   };
   const response = await axios.post("/api/auth/register", registerData);
-  if (response.data.success && response.data.user) {
-    localStorage.setItem("user", JSON.stringify(response.data.user));
+  if (response.data.success) {
+    // Store JWT token in localStorage
+    if (response.data.token) {
+      localStorage.setItem("token", response.data.token);
+    }
+    // Store user data in localStorage
+    if (response.data.user) {
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+    }
   }
   return response.data;
 };
@@ -17,8 +24,15 @@ export const register = async (userData) => {
 // Login user
 export const login = async (userData) => {
   const response = await axios.post("/api/auth/login", userData);
-  if (response.data.success && response.data.user) {
-    localStorage.setItem("user", JSON.stringify(response.data.user));
+  if (response.data.success) {
+    // Store JWT token in localStorage
+    if (response.data.token) {
+      localStorage.setItem("token", response.data.token);
+    }
+    // Store user data in localStorage
+    if (response.data.user) {
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+    }
   }
   return response.data;
 };
@@ -30,6 +44,8 @@ export const logout = async () => {
   } catch (error) {
     console.error("Logout error:", error);
   }
+  // Remove JWT token and user data from localStorage
+  localStorage.removeItem("token");
   localStorage.removeItem("user");
 };
 
