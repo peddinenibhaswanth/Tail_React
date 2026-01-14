@@ -540,16 +540,57 @@ exports.getAvailableSlots = async (req, res) => {
       });
     }
 
-    const allSlots = [
-      "09:00-10:00",
-      "10:00-11:00",
-      "11:00-12:00",
-      "12:00-13:00",
-      "14:00-15:00",
-      "15:00-16:00",
-      "16:00-17:00",
-      "17:00-18:00",
-    ];
+    // Fetch the veterinary's profile to get their available time slots and days
+    const vet = await User.findById(veterinary).select("vetInfo");
+    
+    if (!vet) {
+      return res.status(404).json({
+        success: false,
+        message: "Veterinary not found",
+      });
+    }
+
+    // Get the day of the week for the requested date
+    const requestedDate = new Date(date);
+    const dayOfWeek = requestedDate.toLocaleDateString("en-US", { weekday: "long" });
+
+    // Check if the vet is available on this day
+    const vetAvailableDays = vet.vetInfo?.availableDays || [];
+    if (vetAvailableDays.length > 0 && !vetAvailableDays.includes(dayOfWeek)) {
+      return res.json({
+        success: true,
+        data: {
+          date,
+          dayOfWeek,
+          isVetAvailable: false,
+          message: `Veterinary is not available on ${dayOfWeek}`,
+          allSlots: [],
+          bookedSlots: [],
+          availableSlots: [],
+        },
+      });
+    }
+
+    // Use vet's configured time slots, or default if not set
+    const vetTimeSlots = vet.vetInfo?.availableTimeSlots || [];
+    let allSlots;
+    
+    if (vetTimeSlots.length > 0) {
+      // Use vet's configured slots
+      allSlots = vetTimeSlots.map((slot) => `${slot.start}-${slot.end}`);
+    } else {
+      // Fallback to default slots if vet hasn't configured any
+      allSlots = [
+        "09:00-10:00",
+        "10:00-11:00",
+        "11:00-12:00",
+        "12:00-13:00",
+        "14:00-15:00",
+        "15:00-16:00",
+        "16:00-17:00",
+        "17:00-18:00",
+      ];
+    }
 
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
@@ -576,6 +617,9 @@ exports.getAvailableSlots = async (req, res) => {
       success: true,
       data: {
         date,
+        dayOfWeek,
+        isVetAvailable: true,
+        vetAvailableDays,
         allSlots,
         bookedSlots,
         availableSlots,

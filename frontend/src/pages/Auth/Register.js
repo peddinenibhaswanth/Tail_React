@@ -40,6 +40,8 @@ const Register = () => {
     specialization: "",
     experience: "",
     consultationFee: "",
+    availableDays: [],
+    availableTimeSlots: [],
   });
 
   const [errors, setErrors] = useState({});
@@ -61,7 +63,59 @@ const Register = () => {
     specialization,
     experience,
     consultationFee,
+    availableDays,
+    availableTimeSlots,
   } = formData;
+
+  // Default time slots options for veterinary
+  const defaultTimeSlotOptions = [
+    { start: "09:00", end: "10:00" },
+    { start: "10:00", end: "11:00" },
+    { start: "11:00", end: "12:00" },
+    { start: "12:00", end: "13:00" },
+    { start: "14:00", end: "15:00" },
+    { start: "15:00", end: "16:00" },
+    { start: "16:00", end: "17:00" },
+    { start: "17:00", end: "18:00" },
+  ];
+
+  const daysOfWeek = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
+
+  // Handle checkbox change for available days
+  const handleDayChange = (day) => {
+    setFormData((prev) => ({
+      ...prev,
+      availableDays: prev.availableDays.includes(day)
+        ? prev.availableDays.filter((d) => d !== day)
+        : [...prev.availableDays, day],
+    }));
+  };
+
+  // Handle checkbox change for time slots
+  const handleTimeSlotChange = (slot) => {
+    const slotKey = `${slot.start}-${slot.end}`;
+    setFormData((prev) => {
+      const exists = prev.availableTimeSlots.some(
+        (s) => `${s.start}-${s.end}` === slotKey
+      );
+      return {
+        ...prev,
+        availableTimeSlots: exists
+          ? prev.availableTimeSlots.filter(
+              (s) => `${s.start}-${s.end}` !== slotKey
+            )
+          : [...prev.availableTimeSlots, slot],
+      };
+    });
+  };
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -175,6 +229,8 @@ const Register = () => {
           : [],
         experience: parseInt(experience) || 0,
         consultationFee: parseFloat(consultationFee) || 0,
+        availableDays: availableDays,
+        availableTimeSlots: availableTimeSlots,
       };
     }
 
@@ -519,6 +575,60 @@ const Register = () => {
                         </Form.Group>
                       </Col>
                     </Row>
+
+                    {/* Available Days Selection */}
+                    <Form.Group className="mb-3">
+                      <Form.Label>
+                        <i className="bi bi-calendar-week me-2"></i>
+                        Available Days *
+                      </Form.Label>
+                      <div className="d-flex flex-wrap gap-2">
+                        {daysOfWeek.map((day) => (
+                          <Form.Check
+                            key={day}
+                            type="checkbox"
+                            id={`day-${day}`}
+                            label={day}
+                            checked={availableDays.includes(day)}
+                            onChange={() => handleDayChange(day)}
+                            className="me-3"
+                          />
+                        ))}
+                      </div>
+                      <Form.Text className="text-muted">
+                        Select the days you are available for consultations
+                      </Form.Text>
+                    </Form.Group>
+
+                    {/* Available Time Slots Selection */}
+                    <Form.Group className="mb-3">
+                      <Form.Label>
+                        <i className="bi bi-clock me-2"></i>
+                        Available Time Slots *
+                      </Form.Label>
+                      <div className="d-flex flex-wrap gap-2">
+                        {defaultTimeSlotOptions.map((slot, index) => {
+                          const slotKey = `${slot.start}-${slot.end}`;
+                          const isSelected = availableTimeSlots.some(
+                            (s) => `${s.start}-${s.end}` === slotKey
+                          );
+                          return (
+                            <Form.Check
+                              key={index}
+                              type="checkbox"
+                              id={`slot-${index}`}
+                              label={`${slot.start} - ${slot.end}`}
+                              checked={isSelected}
+                              onChange={() => handleTimeSlotChange(slot)}
+                              className="me-3"
+                            />
+                          );
+                        })}
+                      </div>
+                      <Form.Text className="text-muted">
+                        Select the time slots when you are available for appointments
+                      </Form.Text>
+                    </Form.Group>
                   </>
                 )}
 
