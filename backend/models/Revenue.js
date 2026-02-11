@@ -1,5 +1,124 @@
 const mongoose = require("mongoose");
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     ProductSales:
+ *       type: object
+ *       properties:
+ *         totalOrders:
+ *           type: number
+ *         totalRevenue:
+ *           type: number
+ *         totalProfit:
+ *           type: number
+ *         averageOrderValue:
+ *           type: number
+ *         byCategory:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               category:
+ *                 type: string
+ *               orders:
+ *                 type: number
+ *               revenue:
+ *                 type: number
+ *         topProducts:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               product:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               quantity:
+ *                 type: number
+ *               revenue:
+ *                 type: number
+ *     Adoptions:
+ *       type: object
+ *       properties:
+ *         totalAdoptions:
+ *           type: number
+ *         totalRevenue:
+ *           type: number
+ *         averageAdoptionFee:
+ *           type: number
+ *         bySpecies:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               species:
+ *                 type: string
+ *               count:
+ *                 type: number
+ *               revenue:
+ *                 type: number
+ *     AppointmentsRevenue:
+ *       type: object
+ *       properties:
+ *         totalAppointments:
+ *           type: number
+ *         totalRevenue:
+ *           type: number
+ *         averageFee:
+ *           type: number
+ *         byConsultationMode:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               mode:
+ *                 type: string
+ *               count:
+ *                 type: number
+ *               revenue:
+ *                 type: number
+ *     TotalRevenue:
+ *       type: object
+ *       properties:
+ *         total:
+ *           type: number
+ *         productSales:
+ *           type: number
+ *         adoptions:
+ *           type: number
+ *         appointments:
+ *           type: number
+ *     Revenue:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         date:
+ *           type: string
+ *           format: date-time
+ *         periodType:
+ *           type: string
+ *           enum: [daily, weekly, monthly, yearly]
+ *         periodIdentifier:
+ *           type: string
+ *         productSales:
+ *           $ref: '#/components/schemas/ProductSales'
+ *         adoptions:
+ *           $ref: '#/components/schemas/Adoptions'
+ *         appointments:
+ *           $ref: '#/components/schemas/AppointmentsRevenue'
+ *         totalRevenue:
+ *           $ref: '#/components/schemas/TotalRevenue'
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ */
+
 const revenueSchema = new mongoose.Schema(
   {
     // Date for the revenue entry
@@ -17,6 +136,7 @@ const revenueSchema = new mongoose.Schema(
       default: "daily",
     },
 
+    // Period identifier (e.g., "2025-10", "2025-W44", "2025-10-31")
     periodIdentifier: {
       type: String,
       required: true,
@@ -170,7 +290,7 @@ const revenueSchema = new mongoose.Schema(
         amount: Number,
       },
     ],
-
+    
     // Expenses (for profit calculation)
     expenses: {
       operationalCosts: {
@@ -215,7 +335,7 @@ const revenueSchema = new mongoose.Schema(
         default: 0,
       },
     },
-
+    
     // Customer metrics
     customerMetrics: {
       newCustomers: {

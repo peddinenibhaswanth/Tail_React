@@ -1,5 +1,61 @@
 const mongoose = require("mongoose");
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     AdminResponse:
+ *       type: object
+ *       properties:
+ *         text:
+ *           type: string
+ *         respondedAt:
+ *           type: string
+ *           format: date-time
+ *         respondedBy:
+ *           type: string
+ *     Review:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         product:
+ *           type: string
+ *         user:
+ *           type: string
+ *         order:
+ *           type: string
+ *         rating:
+ *           type: number
+ *         title:
+ *           type: string
+ *         comment:
+ *           type: string
+ *         images:
+ *           type: array
+ *           items:
+ *             type: string
+ *         verifiedPurchase:
+ *           type: boolean
+ *         helpfulVotes:
+ *           type: number
+ *         votedBy:
+ *           type: array
+ *           items:
+ *             type: string
+ *         status:
+ *           type: string
+ *           enum: [pending, approved, rejected]
+ *         adminResponse:
+ *           $ref: '#/components/schemas/AdminResponse'
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ */
+
 const reviewSchema = new mongoose.Schema(
   {
     // Reference to the product being reviewed

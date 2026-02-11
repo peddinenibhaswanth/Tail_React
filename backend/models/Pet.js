@@ -1,5 +1,142 @@
 const mongoose = require("mongoose");
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Pet:
+ *       type: object
+ *       required:
+ *         - name
+ *         - species
+ *         - age
+ *         - gender
+ *         - size
+ *         - color
+ *         - description
+ *         - mainImage
+ *         - shelter
+ *       properties:
+ *         id:
+ *           type: string
+ *           description: The auto-generated id of the pet
+ *         name:
+ *           type: string
+ *           description: The name of the pet
+ *         species:
+ *           type: string
+ *           description: The species of the pet
+ *           enum: [dog, cat, bird, rabbit, other]
+ *         breed:
+ *           type: string
+ *           description: The breed of the pet
+ *         age:
+ *           type: object
+ *           properties:
+ *             value:
+ *               type: number
+ *             unit:
+ *               type: string
+ *               enum: [days, weeks, months, years]
+ *         gender:
+ *           type: string
+ *           enum: [male, female]
+ *         status:
+ *           type: string
+ *           description: The adoption status of the pet
+ *           enum: [available, pending, adopted]
+ *         shelter:
+ *           type: string
+ *           description: The ID of the shelter or organization user
+ *     PetCreateRequest:
+ *       type: object
+ *       description: Multipart form fields for creating a pet (use in Swagger UI)
+ *       required:
+ *         - name
+ *         - species
+ *         - age[value]
+ *         - gender
+ *         - size
+ *         - color
+ *         - description
+ *         - images
+ *       properties:
+ *         name:
+ *           type: string
+ *         species:
+ *           type: string
+ *           enum: [dog, cat, bird, rabbit, other]
+ *         breed:
+ *           type: string
+ *         age[value]:
+ *           type: number
+ *           description: Age value (FormData field name must be exactly age[value])
+ *         age[unit]:
+ *           type: string
+ *           description: Age unit (FormData field name must be exactly age[unit])
+ *           enum: [days, weeks, months, years]
+ *         gender:
+ *           type: string
+ *           enum: [male, female]
+ *         size:
+ *           type: string
+ *           enum: [small, medium, large]
+ *         color:
+ *           type: string
+ *         description:
+ *           type: string
+ *         adoptionFee:
+ *           type: number
+ *         images:
+ *           type: array
+ *           items:
+ *             type: string
+ *             format: binary
+ *           description: Upload 1+ images; the first becomes mainImage
+ *     PetUpdateRequest:
+ *       type: object
+ *       description: Multipart form fields for updating a pet (all fields optional)
+ *       properties:
+ *         name:
+ *           type: string
+ *         species:
+ *           type: string
+ *           enum: [dog, cat, bird, rabbit, other]
+ *         breed:
+ *           type: string
+ *         age[value]:
+ *           type: number
+ *         age[unit]:
+ *           type: string
+ *           enum: [days, weeks, months, years]
+ *         gender:
+ *           type: string
+ *           enum: [male, female]
+ *         size:
+ *           type: string
+ *           enum: [small, medium, large]
+ *         color:
+ *           type: string
+ *         description:
+ *           type: string
+ *         adoptionFee:
+ *           type: number
+ *         images:
+ *           type: array
+ *           items:
+ *             type: string
+ *             format: binary
+ *       example:
+ *         id: 60d0fe4f5311236168a109cc
+ *         name: "Buddy"
+ *         species: "dog"
+ *         breed: "Golden Retriever"
+ *         age: { value: 2, unit: "years" }
+ *         gender: "male"
+ *         status: "available"
+ *         shelter: "60d0fe4f5311236168a109ce"
+ */
+
 const petSchema = new mongoose.Schema({
   name: {
     type: String,
