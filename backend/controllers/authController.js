@@ -2,10 +2,15 @@ const User = require("../models/User");
 const passport = require("passport");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const { geocodeAddress, buildFullAddress } = require("../services/geocodingService");
 
 // JWT Secret and Expiry from environment or defaults
-const JWT_SECRET = process.env.JWT_SECRET || "your-jwt-secret-key-change-in-production";
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d"; 
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d"; // Token valid for 7 days
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is required but was not provided in environment");
+}
 
 // Helper function to generate JWT token
 const generateToken = (userId) => {
@@ -69,11 +74,51 @@ exports.register = async (req, res) => {
     }
 
     if (role === "veterinary" && vetInfo) {
+      // Build fullAddress string from structured address
+      if (vetInfo.clinicAddress && typeof vetInfo.clinicAddress === "object") {
+        vetInfo.fullAddress = buildFullAddress(vetInfo.clinicAddress);
+      }
+      // Default consultationModes if not provided
+      if (!vetInfo.consultationModes || vetInfo.consultationModes.length === 0) {
+        vetInfo.consultationModes = ["in-clinic"];
+      }
+      // If coordinates were provided directly (from map picker), use them
+      if (vetInfo.manualCoordinates && vetInfo.manualCoordinates.lat && vetInfo.manualCoordinates.lng) {
+        vetInfo.coordinates = {
+          type: "Point",
+          coordinates: [vetInfo.manualCoordinates.lng, vetInfo.manualCoordinates.lat],
+        };
+        delete vetInfo.manualCoordinates;
+      }
       userData.vetInfo = vetInfo;
+    }
+
+    if (role === "organization" && req.body.organizationInfo) {
+      userData.organizationInfo = req.body.organizationInfo;
     }
 
     const newUser = new User(userData);
     await newUser.save();
+
+    // Geocode vet address in the background only if no manual coordinates were provided
+    if (role === "veterinary" && newUser.vetInfo?.clinicAddress) {
+      const coords = newUser.vetInfo?.coordinates?.coordinates;
+      const hasManualCoords = coords && (coords[0] !== 0 || coords[1] !== 0);
+      if (!hasManualCoords) {
+        geocodeAddress(newUser.vetInfo.clinicAddress)
+          .then((geoResult) => {
+            if (geoResult) {
+              User.findByIdAndUpdate(newUser._id, {
+                "vetInfo.coordinates": {
+                  type: "Point",
+                  coordinates: [geoResult.lng, geoResult.lat],
+                },
+              }).catch(() => {});
+            }
+          })
+          .catch(() => {}); // Silently ignore geocoding failure
+      }
+    }
 
     // Generate JWT token for the new user
     const token = generateToken(newUser._id);
@@ -86,7 +131,7 @@ exports.register = async (req, res) => {
           ? "Registration successful"
           : "Registration successful. Your account is pending approval.",
       user: newUser,
-      token: token, // JWT token for authentication
+      token: token,
     });
   } catch (error) {
     console.error("Registration error:", error);
@@ -120,8 +165,9 @@ exports.login = async (req, res) => {
       });
     }
 
+    // Check if seller/veterinary/organization/co-admin is approved
     if (
-      (user.role === "seller" || user.role === "veterinary") &&
+      (user.role === "seller" || user.role === "veterinary" || user.role === "organization" || user.role === "co-admin") &&
       !user.isApproved
     ) {
       return res.status(401).json({
@@ -130,6 +176,7 @@ exports.login = async (req, res) => {
       });
     }
 
+    // Compare password using bcrypt
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
@@ -139,15 +186,17 @@ exports.login = async (req, res) => {
       });
     }
 
+    // Generate JWT token
     const token = generateToken(user._id);
 
-    const userResponse = user.toJSON();
+    // Return user data (without password) and token
+    const userResponse = user.toJSON(); // This removes password due to schema method
 
     return res.json({
       success: true,
       message: "Login successful",
       user: userResponse,
-      token: token, 
+      token: token, // JWT token for authentication
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -160,6 +209,8 @@ exports.login = async (req, res) => {
 };
 
 exports.logout = (req, res) => {
+  // With JWT, logout is handled on the client side by removing the token
+  // Server just acknowledges the logout request
   return res.json({
     success: true,
     message: "Logout successful",
@@ -167,6 +218,7 @@ exports.logout = (req, res) => {
 };
 
 exports.getCurrentUser = (req, res) => {
+  // req.user is set by JWT middleware if token is valid
   if (req.user) {
     return res.json({
       success: true,
@@ -221,6 +273,10 @@ exports.updateProfile = async (req, res) => {
 
     if (req.user.role === "veterinary" && vetInfo) {
       updateData.vetInfo = vetInfo;
+    }
+
+    if (req.user.role === "organization" && req.body.organizationInfo) {
+      updateData.organizationInfo = req.body.organizationInfo;
     }
 
     if (req.file) {
@@ -303,6 +359,7 @@ exports.deleteAccount = async (req, res) => {
 
     await User.findByIdAndDelete(userId);
 
+    // With JWT, just confirm deletion - client will remove token
     return res.json({
       success: true,
       message: "Account deleted successfully",

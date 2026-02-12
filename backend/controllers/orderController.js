@@ -2,6 +2,7 @@ const Order = require("../models/Order");
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
 const Revenue = require("../models/Revenue");
+const { createNotification } = require("./notificationController");
 
 // @desc    Create order from cart
 // @route   POST /api/orders
@@ -132,6 +133,31 @@ exports.createOrder = async (req, res) => {
       { path: "items.product", select: "name mainImage" },
       { path: "items.seller", select: "name sellerInfo.businessName" },
     ]);
+
+    // Notify the customer about order placement
+    await createNotification({
+      recipient: req.user._id,
+      type: "order_placed",
+      title: "Order Placed Successfully",
+      message: `Your order #${orderNumber} has been placed successfully. Total: ₹${total.toFixed(2)}`,
+      relatedModel: "Order",
+      relatedId: order._id,
+      link: `/orders/${order._id}`,
+    });
+
+    // Notify each seller about the new order
+    const sellerIds = [...new Set(orderItems.map((item) => item.seller.toString()))];
+    for (const sellerId of sellerIds) {
+      await createNotification({
+        recipient: sellerId,
+        type: "order_placed",
+        title: "New Order Received",
+        message: `You have a new order #${orderNumber}`,
+        relatedModel: "Order",
+        relatedId: order._id,
+        link: `/seller/orders`,
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -295,6 +321,29 @@ exports.updateOrderStatus = async (req, res) => {
 
     order.status = status;
 
+    // Notify customer about order status change (non-blocking)
+    const statusMessages = {
+      processing: `Your order #${order.orderNumber} is now being processed`,
+      shipped: `Your order #${order.orderNumber} has been shipped`,
+      delivered: `Your order #${order.orderNumber} has been delivered`,
+      cancelled: `Your order #${order.orderNumber} has been cancelled`,
+    };
+    if (statusMessages[status]) {
+      try {
+        await createNotification({
+          recipient: order.customer,
+          type: status === "cancelled" ? "order_cancelled" : status === "delivered" ? "order_delivered" : "order_status",
+          title: `Order ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+          message: statusMessages[status],
+          relatedModel: "Order",
+          relatedId: order._id,
+          link: `/orders/${order._id}`,
+        });
+      } catch (notifErr) {
+        console.error("Notification error in updateOrderStatus:", notifErr);
+      }
+    }
+
     if (status === "delivered") {
       order.paymentStatus = "paid";
 
@@ -377,6 +426,13 @@ exports.updateOrderStatus = async (req, res) => {
     }
 
     if (status === "cancelled") {
+      // Restore product stock
+      for (const item of order.items) {
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: { stock: item.quantity },
+        });
+      }
+
       // Handle cancellation financial reversal if it was already paid
       if (order.paymentStatus === "paid") {
         try {
@@ -552,7 +608,7 @@ exports.updatePaymentStatus = async (req, res) => {
             revenueRecord.sellerMetrics[sellerIndex].commission += commission;
           }
         }
-
+                                  
         // 3. Update Global Revenue Record
         revenueRecord.productSales.totalOrders += 1;
         revenueRecord.productSales.totalRevenue += order.total;
@@ -784,6 +840,50 @@ exports.getAllOrders = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching orders",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Manually restore product stock for a cancelled order
+// @route   POST /api/orders/:id/restore-stock
+// @access  Private (Admin)
+exports.restoreStock = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    if (order.status !== "cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: "Stock can only be restored for cancelled orders",
+      });
+    }
+
+    const restored = [];
+    for (const item of order.items) {
+      const updated = await Product.findByIdAndUpdate(
+        item.product,
+        { $inc: { stock: item.quantity } },
+        { new: true }
+      );
+      if (updated) {
+        restored.push({ name: item.name, qty: item.quantity, newStock: updated.stock });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Stock restored for ${restored.length} product(s)`,
+      data: restored,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error restoring stock",
       error: error.message,
     });
   }
