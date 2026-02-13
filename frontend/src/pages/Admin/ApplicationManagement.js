@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Container,
   Card,
@@ -22,6 +23,7 @@ import useAuth from "../../hooks/useAuth";
 
 const ApplicationManagement = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { applications, isLoading, isError, isSuccess, errorMessage } =
     useSelector((state) => state.admin);
@@ -33,6 +35,10 @@ const ApplicationManagement = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [newStatus, setNewStatus] = useState("");
   const [statusReason, setStatusReason] = useState("");
+
+  useEffect(() => {
+    dispatch(resetAdmin());
+  }, [dispatch]);
 
   useEffect(() => {
     dispatch(getAllApplications());
@@ -65,7 +71,7 @@ const ApplicationManagement = () => {
         updateApplicationStatus({
           id: selectedApplication._id,
           status: newStatus,
-          reason: statusReason,
+          notes: statusReason,
         })
       );
     }
@@ -110,12 +116,15 @@ const ApplicationManagement = () => {
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
+          <Button variant="outline-secondary" size="sm" onClick={() => navigate(user?.role === "organization" ? "/organization/dashboard" : "/admin")} className="mb-2">
+            <i className="bi bi-arrow-left me-2"></i>Back to Dashboard
+          </Button>
           <h2 className="mb-1">Adoption Applications</h2>
           <p className="text-muted mb-0">
             Review and manage pet adoption requests
           </p>
         </div>
-        <Badge bg="primary" className="fs-6">
+        <Badge bg="primary" className="rounded-pill fs-6">
           Total: {applications.length} applications
         </Badge>
       </div>
@@ -129,7 +138,7 @@ const ApplicationManagement = () => {
       {/* Statistics Cards */}
       <Row className="mb-4">
         <Col md={3}>
-          <Card className="text-center bg-warning bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-warning bg-opacity-10">
             <Card.Body>
               <h3>
                 {applications.filter((a) => a.status === "pending").length}
@@ -139,7 +148,7 @@ const ApplicationManagement = () => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="text-center bg-info bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-info bg-opacity-10">
             <Card.Body>
               <h3>
                 {
@@ -154,7 +163,7 @@ const ApplicationManagement = () => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="text-center bg-success bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-success bg-opacity-10">
             <Card.Body>
               <h3>
                 {applications.filter((a) => a.status === "approved").length}
@@ -164,7 +173,7 @@ const ApplicationManagement = () => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="text-center bg-danger bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-danger bg-opacity-10">
             <Card.Body>
               <h3>
                 {applications.filter((a) => a.status === "rejected").length}
@@ -175,7 +184,7 @@ const ApplicationManagement = () => {
         </Col>
       </Row>
 
-      <Card className="mb-4">
+      <Card className="mb-4 border-0 shadow-sm">
         <Card.Body>
           <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
             <Form.Control

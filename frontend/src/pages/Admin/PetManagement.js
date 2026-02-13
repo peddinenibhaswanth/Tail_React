@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Container,
   Card,
@@ -15,14 +15,19 @@ import {
   Image,
 } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
-import { getPets, deletePet, resetPets } from "../../redux/slices/petSlice";
+import { getPets, deletePet, resetPets, getMyPets } from "../../redux/slices/petSlice";
 import useAuth from "../../hooks/useAuth";
 
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const PetManagement = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user } = useAuth();
+
+  // Determine URL prefix based on role
+  const isOrg = user?.role === "organization";
+  const basePath = isOrg ? "/organization" : "/admin";
   const { pets, isLoading, isError, isSuccess, message, pagination } =
     useSelector((state) => state.pets);
 
@@ -34,8 +39,12 @@ const PetManagement = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
 
   useEffect(() => {
-    dispatch(getPets({}));
-  }, [dispatch]);
+    if (isOrg) {
+      dispatch(getMyPets());
+    } else {
+      dispatch(getPets({}));
+    }
+  }, [dispatch, isOrg]);
 
   useEffect(() => {
     if (isSuccess && message?.includes("deleted")) {
@@ -95,14 +104,19 @@ const PetManagement = () => {
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
+          <Button variant="outline-secondary" size="sm" onClick={() => navigate(isOrg ? "/organization/dashboard" : "/admin")} className="mb-2">
+            <i className="bi bi-arrow-left me-2"></i>Back to Dashboard
+          </Button>
           <h2 className="mb-1">Pet Management</h2>
           <p className="text-muted mb-0">
             Manage all pets available for adoption
           </p>
         </div>
-        <Link to="/pets/new" className="btn btn-primary">
-          <i className="bi bi-plus-circle me-2"></i>Add New Pet
-        </Link>
+        {user?.role !== "admin" && user?.role !== "co-admin" && (
+          <Link to={`${basePath}/pets/new`} className="btn btn-primary rounded-pill">
+            <i className="bi bi-plus-circle me-2"></i>Add New Pet
+          </Link>
+        )}
       </div>
 
       {isError && (
@@ -119,7 +133,7 @@ const PetManagement = () => {
       {/* Statistics Cards */}
       <Row className="mb-4">
         <Col md={3}>
-          <Card className="text-center bg-success bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-success bg-opacity-10">
             <Card.Body>
               <h3>
                 {
@@ -133,7 +147,7 @@ const PetManagement = () => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="text-center bg-warning bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-warning bg-opacity-10">
             <Card.Body>
               <h3>
                 {
@@ -147,7 +161,7 @@ const PetManagement = () => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="text-center bg-info bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-info bg-opacity-10">
             <Card.Body>
               <h3>
                 {
@@ -161,7 +175,7 @@ const PetManagement = () => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="text-center bg-primary bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-primary bg-opacity-10">
             <Card.Body>
               <h3>{pets.length}</h3>
               <small className="text-muted">Total Pets</small>
@@ -170,7 +184,7 @@ const PetManagement = () => {
         </Col>
       </Row>
 
-      <Card>
+      <Card className="border-0 shadow-sm">
         <Card.Body>
           <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
             <Form.Control
@@ -273,7 +287,7 @@ const PetManagement = () => {
                           View
                         </Button>
                         <Link
-                          to={`/pets/${pet._id}/edit`}
+                          to={`${basePath}/pets/${pet._id}/edit`}
                           className="btn btn-outline-primary btn-sm me-1"
                         >
                           Edit
@@ -317,57 +331,94 @@ const PetManagement = () => {
                   alt={selectedPet.name}
                   fluid
                   rounded
+                  className="mb-3"
                 />
-              </Col>
-              <Col md={8}>
-                <h4>{selectedPet.name}</h4>
-                <p>
-                  <strong>Species:</strong> {selectedPet.species}
-                </p>
-                <p>
-                  <strong>Breed:</strong> {selectedPet.breed}
-                </p>
-                <p>
-                  <strong>Age:</strong>{" "}
-                  {selectedPet.age?.value
-                    ? `${selectedPet.age.value} ${selectedPet.age.unit}`
-                    : "N/A"}
-                </p>
-                <p>
-                  <strong>Gender:</strong> {selectedPet.gender}
-                </p>
-                <p>
-                  <strong>Size:</strong> {selectedPet.size}
-                </p>
-                <p>
-                  <strong>Status:</strong>{" "}
-                  {getStatusBadge(
-                    selectedPet.adoptionStatus || selectedPet.status
-                  )}
-                </p>
-                <p>
-                  <strong>Description:</strong> {selectedPet.description}
-                </p>
-                {selectedPet.healthInfo && (
-                  <div>
-                    <strong>Health Info:</strong>
-                    <ul className="mb-2">
-                      {selectedPet.healthInfo.vaccinated && (
-                        <li>Vaccinated ✓</li>
-                      )}
-                      {selectedPet.healthInfo.neutered && <li>Neutered ✓</li>}
-                      {selectedPet.healthInfo.microchipped && (
-                        <li>Microchipped ✓</li>
-                      )}
-                      {selectedPet.healthInfo.specialNeeds && (
-                        <li>Special Needs</li>
-                      )}
-                    </ul>
+                {/* Additional images */}
+                {selectedPet.images?.length > 0 && (
+                  <div className="d-flex flex-wrap gap-1">
+                    {selectedPet.images.map((img, i) => (
+                      <Image
+                        key={i}
+                        src={`${API_URL}/uploads/pets/${img}`}
+                        width={60}
+                        height={60}
+                        style={{ objectFit: "cover" }}
+                        rounded
+                      />
+                    ))}
                   </div>
                 )}
-                <p>
+              </Col>
+              <Col md={8}>
+                <h4 className="mb-3">{selectedPet.name}</h4>
+
+                <Row className="g-2 mb-3">
+                  <Col xs={6}><strong>Species:</strong> <span className="text-capitalize">{selectedPet.species}</span></Col>
+                  <Col xs={6}><strong>Breed:</strong> {selectedPet.breed || "N/A"}</Col>
+                  <Col xs={6}><strong>Age:</strong> {selectedPet.age?.value ? `${selectedPet.age.value} ${selectedPet.age.unit}` : "N/A"}</Col>
+                  <Col xs={6}><strong>Gender:</strong> <span className="text-capitalize">{selectedPet.gender}</span></Col>
+                  <Col xs={6}><strong>Size:</strong> <span className="text-capitalize">{selectedPet.size}</span></Col>
+                  <Col xs={6}><strong>Color:</strong> {selectedPet.color || "N/A"}</Col>
+                  <Col xs={6}><strong>Status:</strong> {getStatusBadge(selectedPet.status || selectedPet.adoptionStatus)}</Col>
+                  <Col xs={6}><strong>Adoption Fee:</strong> {selectedPet.adoptionFee > 0 ? `₹${selectedPet.adoptionFee}` : "Free"}</Col>
+                </Row>
+
+                {selectedPet.description && (
+                  <div className="mb-3">
+                    <strong>Description:</strong>
+                    <p className="text-muted mt-1 mb-0">{selectedPet.description}</p>
+                  </div>
+                )}
+
+                {/* Health Info */}
+                {selectedPet.healthInfo && (
+                  <div className="mb-3">
+                    <strong>Health Info:</strong>
+                    <div className="d-flex flex-wrap gap-2 mt-1">
+                      {selectedPet.healthInfo.vaccinated && <Badge bg="success">Vaccinated</Badge>}
+                      {selectedPet.healthInfo.neutered && <Badge bg="info">Neutered</Badge>}
+                      {selectedPet.healthInfo.microchipped && <Badge bg="primary">Microchipped</Badge>}
+                      {selectedPet.healthInfo.specialNeeds && <Badge bg="warning" text="dark">Special Needs</Badge>}
+                      {!selectedPet.healthInfo.vaccinated && !selectedPet.healthInfo.neutered &&
+                       !selectedPet.healthInfo.microchipped && !selectedPet.healthInfo.specialNeeds && (
+                        <span className="text-muted small">No health records</span>
+                      )}
+                    </div>
+                    {selectedPet.healthInfo.specialNeedsDescription && (
+                      <p className="text-muted small mt-1 mb-0">{selectedPet.healthInfo.specialNeedsDescription}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Good With */}
+                {selectedPet.goodWith && (
+                  <div className="mb-3">
+                    <strong>Good With:</strong>
+                    <div className="d-flex flex-wrap gap-2 mt-1">
+                      {selectedPet.goodWith.children && <Badge bg="success">Children</Badge>}
+                      {selectedPet.goodWith.dogs && <Badge bg="success">Dogs</Badge>}
+                      {selectedPet.goodWith.cats && <Badge bg="success">Cats</Badge>}
+                      {selectedPet.goodWith.otherAnimals && <Badge bg="success">Other Animals</Badge>}
+                      {!selectedPet.goodWith.children && !selectedPet.goodWith.dogs &&
+                       !selectedPet.goodWith.cats && !selectedPet.goodWith.otherAnimals && (
+                        <span className="text-muted small">Not specified</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Behavior */}
+                {selectedPet.behavior && (
+                  <Row className="g-2 mb-3">
+                    <Col xs={4}><strong className="small">Energy:</strong> <span className="text-capitalize small">{selectedPet.behavior.energyLevel || "N/A"}</span></Col>
+                    <Col xs={4}><strong className="small">Training:</strong> <span className="text-capitalize small">{selectedPet.behavior.trainingLevel || "N/A"}</span></Col>
+                    <Col xs={4}><strong className="small">Social:</strong> <span className="text-capitalize small">{selectedPet.behavior.socialness || "N/A"}</span></Col>
+                  </Row>
+                )}
+
+                <small className="text-muted">
                   <strong>Added:</strong> {formatDate(selectedPet.createdAt)}
-                </p>
+                </small>
               </Col>
             </Row>
           )}
@@ -377,7 +428,7 @@ const PetManagement = () => {
             Close
           </Button>
           <Link
-            to={`/pets/${selectedPet?._id}/edit`}
+            to={`${basePath}/pets/${selectedPet?._id}/edit`}
             className="btn btn-primary"
           >
             Edit Pet

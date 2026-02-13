@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Container, Row, Col, Form, Button, InputGroup } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
-import { getProducts, resetProducts } from "../../redux/slices/productSlice";
+import { getProducts } from "../../redux/slices/productSlice";
 import ProductCard from "../../components/common/ProductCard";
+import SkeletonCard from "../../components/common/SkeletonCard";
 import Loading from "../../components/common/Loading";
 import { PRODUCT_CATEGORIES } from "../../utils/constants";
 
@@ -20,9 +21,9 @@ const ProductList = () => {
     inStock: false,
   });
 
-  // Track if this is initial load - use ref to avoid re-renders
-  const initialLoadRef = useRef(true);
-  const [showInitialLoading, setShowInitialLoading] = useState(true);
+  // Track if this is initial load - only true when no cached data exists
+  const initialLoadRef = useRef(products.length === 0);
+  const [showInitialLoading, setShowInitialLoading] = useState(products.length === 0);
 
   // Debounce timer ref
   const debounceRef = useRef(null);
@@ -51,13 +52,6 @@ const ProductList = () => {
     };
   }, [dispatch, filters]);
 
-  // Reset on unmount only
-  useEffect(() => {
-    return () => {
-      dispatch(resetProducts());
-    };
-  }, [dispatch]);
-
   const handleFilterChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFilters((prev) => ({
@@ -84,11 +78,14 @@ const ProductList = () => {
   return (
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="fw-bold">Pet Products</h2>
+        <div>
+          <h2 className="fw-bold mb-1">Pet Products</h2>
+          <p className="text-muted mb-0 small">Quality supplies for your beloved pets</p>
+        </div>
       </div>
 
       {/* Filters Section */}
-      <div className="bg-light p-4 rounded mb-4">
+      <div className="filter-section mb-4">
         <Row className="g-3">
           <Col md={4}>
             <Form.Group>
@@ -168,11 +165,11 @@ const ProductList = () => {
 
           <Col md={2}>
             <Button
-              variant="secondary"
+              variant="outline-secondary"
               onClick={handleReset}
-              className="mt-4 w-100"
+              className="mt-4 w-100 rounded-pill"
             >
-              Reset Filters
+              <i className="bi bi-arrow-counterclockwise me-1"></i>Reset
             </Button>
           </Col>
         </Row>
@@ -185,28 +182,40 @@ const ProductList = () => {
         </div>
       )}
 
-      {/* Products Grid */}
+      {/* Loading Skeleton - only when no cached data */}
+      {isLoading && !showInitialLoading && products.length === 0 && (
+        <Row className="g-4">
+          {[...Array(8)].map((_, i) => (
+            <Col key={i} xs={12} sm={6} md={4} lg={3}>
+              <SkeletonCard type="product" />
+            </Col>
+          ))}
+        </Row>
+      )}
+
+      {/* Products Grid - show even during background refetch if data exists */}
       {products && products.length > 0 ? (
         <>
           <div className="mb-3 text-muted">
             Found {products.length} product{products.length !== 1 ? "s" : ""}
           </div>
           <Row className="g-4">
-            {products.map((product) => (
-              <Col key={product._id} xs={12} sm={6} md={4} lg={3}>
+            {products.map((product, index) => (
+              <Col key={product._id} xs={12} sm={6} md={4} lg={3} className="card-stagger-enter visible" style={{ transitionDelay: `${index * 0.07}s` }}>
                 <ProductCard product={product} />
               </Col>
             ))}
           </Row>
         </>
-      ) : (
-        <div className="text-center py-5">
-          <i className="bi bi-box-seam fs-1 text-muted"></i>
-          <p className="text-muted mt-3">
-            No products found matching your criteria
+      ) : !isLoading || products.length > 0 ? null : (
+        <div className="empty-state text-center py-5">
+          <div className="mb-3" style={{ fontSize: '3rem' }}>📦</div>
+          <h5 className="fw-bold text-muted">No Products Found</h5>
+          <p className="text-muted small">
+            No products found matching your criteria. Try adjusting your filters.
           </p>
-          <Button variant="primary" onClick={handleReset}>
-            Clear Filters
+          <Button variant="primary" onClick={handleReset} className="rounded-pill px-4">
+            <i className="bi bi-arrow-counterclockwise me-1"></i>Clear Filters
           </Button>
         </div>
       )}

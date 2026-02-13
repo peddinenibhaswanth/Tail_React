@@ -88,25 +88,31 @@ const CustomerDashboard = () => {
 
   return (
     <Container className="py-4">
-      <h2 className="mb-4">Welcome back, {user?.name}!</h2>
+      <div className="mb-4">
+        <h2 className="fw-bold mb-1">Welcome back, {user?.name}! 👋</h2>
+        <p className="text-muted mb-0">Here's what's happening with your account</p>
+      </div>
 
       {isError && <Alert variant="danger">{message}</Alert>}
 
       {/* Dashboard Stats */}
       <Row className="g-4 mb-4">
         <Col md={3}>
-          <Card className="h-100 border-0 shadow-sm">
-            <Card.Body className="text-center">
-              <div className="display-4 text-primary mb-2">
+          <Card className="stat-card h-100 border-0 shadow-sm">
+            <Card.Body className="text-center p-4">
+              <div className="stat-icon mx-auto mb-2" style={{ background: 'var(--primary-100)', color: 'var(--primary-600)' }}>
+                <i className="bi bi-bag-fill"></i>
+              </div>
+              <div className="stat-number" style={{ color: 'var(--primary-600)' }}>
                 {stats.totalOrders}
               </div>
-              <h6 className="text-muted">Total Orders</h6>
+              <div className="stat-label">Total Orders</div>
               <small className="text-success d-block mb-2">
                 {stats.activeOrders} Active
               </small>
               <Link
                 to="/orders"
-                className="btn btn-sm btn-outline-primary mt-2"
+                className="btn btn-sm btn-outline-primary rounded-pill mt-2"
               >
                 View All
               </Link>
@@ -115,18 +121,21 @@ const CustomerDashboard = () => {
         </Col>
 
         <Col md={3}>
-          <Card className="h-100 border-0 shadow-sm">
-            <Card.Body className="text-center">
-              <div className="display-4 text-success mb-2">
+          <Card className="stat-card h-100 border-0 shadow-sm">
+            <Card.Body className="text-center p-4">
+              <div className="stat-icon mx-auto mb-2" style={{ background: 'var(--success-100)', color: 'var(--success-600)' }}>
+                <i className="bi bi-calendar-check-fill"></i>
+              </div>
+              <div className="stat-number" style={{ color: 'var(--success-600)' }}>
                 {stats.totalAppointments}
               </div>
-              <h6 className="text-muted">Appointments</h6>
+              <div className="stat-label">Appointments</div>
               <small className="text-info d-block mb-2">
                 {stats.upcomingAppointments} Upcoming
               </small>
               <Link
                 to="/appointments"
-                className="btn btn-sm btn-outline-success mt-2"
+                className="btn btn-sm btn-outline-success rounded-pill mt-2"
               >
                 View All
               </Link>
@@ -135,18 +144,21 @@ const CustomerDashboard = () => {
         </Col>
 
         <Col md={3}>
-          <Card className="h-100 border-0 shadow-sm">
-            <Card.Body className="text-center">
-              <div className="display-4 text-info mb-2">
+          <Card className="stat-card h-100 border-0 shadow-sm">
+            <Card.Body className="text-center p-4">
+              <div className="stat-icon mx-auto mb-2" style={{ background: 'var(--info-100)', color: 'var(--info-600)' }}>
+                <i className="bi bi-file-earmark-text-fill"></i>
+              </div>
+              <div className="stat-number" style={{ color: 'var(--info-600)' }}>
                 {stats.totalApplications}
               </div>
-              <h6 className="text-muted">Adoption Applications</h6>
+              <div className="stat-label">Adoption Applications</div>
               <small className="text-warning d-block mb-2">
                 {stats.pendingApplications} Pending
               </small>
               <Link
                 to="/applications"
-                className="btn btn-sm btn-outline-info mt-2"
+                className="btn btn-sm btn-outline-info rounded-pill mt-2"
               >
                 View All
               </Link>
@@ -155,18 +167,21 @@ const CustomerDashboard = () => {
         </Col>
 
         <Col md={3}>
-          <Card className="h-100 border-0 shadow-sm">
-            <Card.Body className="text-center">
-              <div className="display-4 text-warning mb-2">
+          <Card className="stat-card h-100 border-0 shadow-sm">
+            <Card.Body className="text-center p-4">
+              <div className="stat-icon mx-auto mb-2" style={{ background: 'var(--warning-100)', color: 'var(--warning-600)' }}>
+                <i className="bi bi-heart-fill"></i>
+              </div>
+              <div className="stat-number" style={{ color: 'var(--warning-600)' }}>
                 {stats.approvedApplications}
               </div>
-              <h6 className="text-muted">Pets Adopted</h6>
+              <div className="stat-label">Pets Adopted</div>
               <small className="text-success d-block mb-2">
                 Approved Applications
               </small>
               <Link
                 to="/profile"
-                className="btn btn-sm btn-outline-warning mt-2"
+                className="btn btn-sm btn-outline-warning rounded-pill mt-2"
               >
                 My Profile
               </Link>
@@ -178,48 +193,51 @@ const CustomerDashboard = () => {
       {/* Quick Actions */}
       <Row className="g-4 mb-4">
         <Col md={4}>
-          <Card className="h-100 border-0 shadow-sm">
-            <Card.Body>
-              <h5 className="card-title">
-                <i className="bi bi-cart me-2"></i>Shop Products
-              </h5>
-              <p className="text-muted">
+          <Card className="feature-card h-100 border-0 shadow-sm">
+            <Card.Body className="p-4">
+              <div className="feature-icon mb-3">
+                <i className="bi bi-cart-fill fs-5"></i>
+              </div>
+              <h5 className="fw-bold">Shop Products</h5>
+              <p className="text-muted small">
                 Browse our collection of pet supplies and accessories.
               </p>
-              <Link to="/products" className="btn btn-primary">
-                Shop Now
+              <Link to="/products" className="btn btn-primary btn-sm rounded-pill px-3">
+                <i className="bi bi-arrow-right me-1"></i>Shop Now
               </Link>
             </Card.Body>
           </Card>
         </Col>
 
         <Col md={4}>
-          <Card className="h-100 border-0 shadow-sm">
-            <Card.Body>
-              <h5 className="card-title">
-                <i className="bi bi-heart me-2"></i>Adopt a Pet
-              </h5>
-              <p className="text-muted">
+          <Card className="feature-card h-100 border-0 shadow-sm">
+            <Card.Body className="p-4">
+              <div className="feature-icon mb-3" style={{ background: 'var(--success-100)', color: 'var(--success-600)' }}>
+                <i className="bi bi-heart-fill fs-5"></i>
+              </div>
+              <h5 className="fw-bold">Adopt a Pet</h5>
+              <p className="text-muted small">
                 Find your perfect furry companion today.
               </p>
-              <Link to="/pets" className="btn btn-success">
-                Browse Pets
+              <Link to="/pets" className="btn btn-success btn-sm rounded-pill px-3">
+                <i className="bi bi-arrow-right me-1"></i>Browse Pets
               </Link>
             </Card.Body>
           </Card>
         </Col>
 
         <Col md={4}>
-          <Card className="h-100 border-0 shadow-sm">
-            <Card.Body>
-              <h5 className="card-title">
-                <i className="bi bi-calendar-check me-2"></i>Book Appointment
-              </h5>
-              <p className="text-muted">
+          <Card className="feature-card h-100 border-0 shadow-sm">
+            <Card.Body className="p-4">
+              <div className="feature-icon mb-3" style={{ background: 'var(--info-100)', color: 'var(--info-600)' }}>
+                <i className="bi bi-calendar-check-fill fs-5"></i>
+              </div>
+              <h5 className="fw-bold">Book Appointment</h5>
+              <p className="text-muted small">
                 Schedule a visit with our veterinarians.
               </p>
-              <Link to="/appointments/book" className="btn btn-info">
-                Book Now
+              <Link to="/appointments/book" className="btn btn-info btn-sm rounded-pill px-3">
+                <i className="bi bi-arrow-right me-1"></i>Book Now
               </Link>
             </Card.Body>
           </Card>
@@ -228,9 +246,9 @@ const CustomerDashboard = () => {
 
       {/* Recent Orders */}
       <Card className="border-0 shadow-sm mb-4">
-        <Card.Header className="bg-white d-flex justify-content-between align-items-center">
-          <h5 className="mb-0">Recent Orders</h5>
-          <Link to="/orders" className="btn btn-sm btn-outline-primary">
+        <Card.Header className="bg-white d-flex justify-content-between align-items-center border-0 py-3">
+          <h5 className="mb-0 fw-bold"><i className="bi bi-bag me-2 text-primary"></i>Recent Orders</h5>
+          <Link to="/orders" className="btn btn-sm btn-outline-primary rounded-pill px-3">
             View All
           </Link>
         </Card.Header>
