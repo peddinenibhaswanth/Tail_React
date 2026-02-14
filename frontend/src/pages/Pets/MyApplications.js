@@ -11,7 +11,7 @@ import {
   Row,
   Col,
 } from "react-bootstrap";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "../../api/axios";
 import NotificationContext from "../../context/NotificationContext";
 
@@ -22,6 +22,7 @@ const DEFAULT_PET_IMAGE =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='250' viewBox='0 0 300 250'%3E%3Crect fill='%23f0f0f0' width='300' height='250'/%3E%3Ctext fill='%23999' font-family='Arial' font-size='16' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3E🐾 No Image%3C/text%3E%3C/svg%3E";
 
 const MyApplications = () => {
+  const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -131,9 +132,15 @@ const MyApplications = () => {
             Track the status of your pet adoption applications
           </p>
         </div>
-        <Link to="/pets" className="btn btn-primary">
+        <Link to="/pets" className="btn btn-primary rounded-pill">
           <i className="bi bi-heart me-2"></i>Browse Pets
         </Link>
+        <button
+          className="btn btn-outline-secondary rounded-pill ms-2"
+          onClick={() => navigate("/dashboard")}
+        >
+          <i className="bi bi-arrow-left me-1"></i>Back to Dashboard
+        </button>
       </div>
 
       {error && (
@@ -145,7 +152,7 @@ const MyApplications = () => {
       {/* Stats Cards */}
       <Row className="mb-4">
         <Col md={3}>
-          <Card className="text-center bg-primary bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-primary bg-opacity-10">
             <Card.Body>
               <h3>{applications.length}</h3>
               <small className="text-muted">Total Applications</small>
@@ -153,7 +160,7 @@ const MyApplications = () => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="text-center bg-warning bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-warning bg-opacity-10">
             <Card.Body>
               <h3>
                 {
@@ -167,7 +174,7 @@ const MyApplications = () => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="text-center bg-success bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-success bg-opacity-10">
             <Card.Body>
               <h3>
                 {applications.filter((a) => a.status === "approved").length}
@@ -177,7 +184,7 @@ const MyApplications = () => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="text-center bg-danger bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-danger bg-opacity-10">
             <Card.Body>
               <h3>
                 {applications.filter((a) => a.status === "rejected").length}
@@ -198,7 +205,7 @@ const MyApplications = () => {
                 You haven't applied to adopt any pets yet. Browse our available
                 pets and find your perfect companion!
               </p>
-              <Link to="/pets" className="btn btn-primary btn-lg">
+              <Link to="/pets" className="btn btn-primary btn-lg rounded-pill">
                 <i className="bi bi-search me-2"></i>Find a Pet
               </Link>
             </div>

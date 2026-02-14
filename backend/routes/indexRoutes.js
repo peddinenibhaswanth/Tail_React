@@ -13,7 +13,16 @@ const dashboardRoutes = require("./dashboardRoutes");
 const adminRoutes = require("./adminRoutes");
 const messageRoutes = require("./messageRoutes");
 
-// Health check route
+/**
+ * @swagger
+ * /api/health:
+ *   get:
+ *     summary: Health check
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: API is running
+ */
 router.get("/health", (req, res) => {
   res.json({
     success: true,

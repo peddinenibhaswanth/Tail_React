@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { getCart, clearCart } from "../../redux/slices/cartSlice";
@@ -17,6 +17,8 @@ const CheckoutPage = () => {
     isLoading: orderLoading,
     order,
     isSuccess,
+    isError: orderError,
+    message: orderMessage,
   } = useSelector((state) => state.orders);
 
   const [shippingAddress, setShippingAddress] = useState({
@@ -33,22 +35,31 @@ const CheckoutPage = () => {
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [validated, setValidated] = useState(false);
+  // Track whether the order was created within this component's lifetime
+  // This prevents stale Redux state from triggering navigation on mount
+  const orderCreatedHere = useRef(false);
 
   useEffect(() => {
-    // Reset order state when component mounts to allow new orders
+    // Reset any stale order state when component mounts
     dispatch(resetOrders());
     dispatch(clearOrder());
     dispatch(getCart());
   }, [dispatch]);
 
+  // Show backend order error (e.g. insufficient stock) in the form
   useEffect(() => {
-    // Only navigate if we just successfully created a new order
-    // Check both isSuccess flag and that order exists with an ID
-    if (isSuccess && order && order._id) {
-      // Clear cart and navigate to success page
+    if (orderError && orderMessage) {
+      setError(orderMessage);
+      orderCreatedHere.current = false;
+    }
+  }, [orderError, orderMessage]);
+
+  useEffect(() => {
+    // Only navigate if the order was created during this checkout session
+    if (orderCreatedHere.current && isSuccess && order && order._id) {
+      orderCreatedHere.current = false;
       dispatch(clearCart());
       navigate(`/order-success/${order._id}`);
-      // Reset the success flag after navigation to prevent re-navigation
       dispatch(resetOrders());
     }
   }, [isSuccess, order, navigate, dispatch]);
@@ -60,6 +71,10 @@ const CheckoutPage = () => {
       </div>
     );
   }
+
+  const stockIssues = items.filter(
+    (item) => item.product && item.quantity > item.product.stock
+  );
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -139,18 +154,44 @@ const CheckoutPage = () => {
       paymentMethod,
     };
 
+    orderCreatedHere.current = true;
     dispatch(createOrder(orderData));
   };
+
+  if (stockIssues.length > 0) {
+    return (
+      <div className="container py-5 text-center">
+        <div className="alert alert-danger mb-4">
+          <h5 className="mb-2"><i className="bi bi-exclamation-triangle me-2"></i>Stock Issue</h5>
+          <p className="mb-1">The following items in your cart exceed available stock:</p>
+          <ul className="list-unstyled mb-2">
+            {stockIssues.map((item) => (
+              <li key={item._id}>
+                <strong>{item.product.name}</strong>: you have {item.quantity}, only {item.product.stock} available
+              </li>
+            ))}
+          </ul>
+          <p className="mb-0 small">Please update your cart before checking out.</p>
+        </div>
+        <a href="/cart" className="btn btn-primary rounded-pill px-4">
+          <i className="bi bi-cart3 me-1"></i>Go Back to Cart
+        </a>
+      </div>
+    );
+  }
 
   return (
     <div className="container py-4">
       <div className="row">
         <div className="col-lg-7">
-          <h2 className="mb-4">Checkout</h2>
+          <div className="mb-4">
+            <h2 className="fw-bold mb-1"><i className="bi bi-credit-card me-2 text-primary"></i>Checkout</h2>
+            <p className="text-muted mb-0 small">Complete your order details below</p>
+          </div>
           <form onSubmit={handleSubmit} noValidate>
-            <div className="card mb-3">
-              <div className="card-body">
-                <h5 className="card-title">Shipping Information</h5>
+            <div className="card border-0 shadow-sm mb-3">
+              <div className="card-body p-4">
+                <h5 className="card-title fw-bold mb-3"><i className="bi bi-truck me-2 text-primary"></i>Shipping Information</h5>
                 <div className="row g-3">
                   <div className="col-md-6">
                     <label htmlFor="fullName" className="form-label">
@@ -323,9 +364,9 @@ const CheckoutPage = () => {
               </div>
             </div>
 
-            <div className="card mb-3">
-              <div className="card-body">
-                <h5 className="card-title">Payment Method</h5>
+            <div className="card border-0 shadow-sm mb-3">
+              <div className="card-body p-4">
+                <h5 className="card-title fw-bold mb-3"><i className="bi bi-wallet2 me-2 text-primary"></i>Payment Method</h5>
                 <div className="form-check mb-2">
                   <input
                     className="form-check-input"
@@ -389,18 +430,18 @@ const CheckoutPage = () => {
 
             <button
               type="submit"
-              className="btn btn-primary"
-              disabled={cartLoading || orderLoading}
+              className="btn btn-primary rounded-pill px-4 py-2 fw-semibold"
+              disabled={cartLoading || orderLoading || stockIssues.length > 0}
             >
-              {orderLoading ? "Placing Order..." : "Place Order"}
+              {orderLoading ? "Placing Order..." : (<><i className="bi bi-check-circle me-1"></i>Place Order</>)}
             </button>
           </form>
         </div>
 
         <div className="col-lg-5 mt-4 mt-lg-0">
-          <div className="card">
-            <div className="card-body">
-              <h5 className="card-title">Order Summary</h5>
+          <div className="card border-0 shadow-sm">
+            <div className="card-body p-4">
+              <h5 className="card-title fw-bold mb-3"><i className="bi bi-receipt me-2 text-primary"></i>Order Summary</h5>
               {items.map((item) => (
                 <div
                   key={item._id}

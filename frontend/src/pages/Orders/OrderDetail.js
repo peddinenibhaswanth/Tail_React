@@ -1,19 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { getOrder, cancelOrder } from "../../redux/slices/orderSlice";
 import useAuth from "../../hooks/useAuth";
+import ReviewForm from "../../components/products/ReviewForm";
+import * as productService from "../../api/productService";
 
 const OrderDetail = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { order, isLoading, isError, message, isSuccess } = useSelector(
+  const [searchParams] = useSearchParams();
+  const isReviewMode = searchParams.get("action") === "review";
+  const { order, isLoading, isError, message } = useSelector(
     (state) => state.orders
   );
-  const { isAdmin, isSeller, user } = useAuth();
+  const { isAdmin, isSeller } = useAuth();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [reviewingProduct, setReviewingProduct] = useState(null);
+  const [alreadyReviewedProducts, setAlreadyReviewedProducts] = useState(new Set());
+  const [reviewedProducts, setReviewedProducts] = useState(new Set());
 
   // Determine correct back link based on user role
   const getBackToOrdersLink = () => {
@@ -50,6 +56,53 @@ const OrderDetail = () => {
     }
   }, [dispatch, id]);
 
+  // Check which items have already been reviewed (only for delivered orders)
+  useEffect(() => {
+    const checkReviewEligibility = async () => {
+      if (order && order?.status === "delivered" && !isAdmin && !isSeller) {
+        try {
+          const response = await productService.checkReviewEligibility();
+          const eligible = (response.data || []).filter(
+            (item) => item.orderId === id || item.orderId?.toString() === id
+          );
+          const eligibleProductIds = new Set(
+            eligible.map((item) => item.productId?.toString())
+          );
+          
+          // Build set of already-reviewed products for this order
+          const allProductIds = (order.items || []).map(
+            (item) => (item.product?._id || item.product)?.toString()
+          );
+          const alreadyReviewed = new Set(
+            allProductIds.filter((pid) => pid && !eligibleProductIds.has(pid))
+          );
+          setAlreadyReviewedProducts(alreadyReviewed);
+          
+          // Auto-open first reviewable product if coming from Review button
+          if (isReviewMode && eligibleProductIds.size > 0) {
+            const firstEligible = eligibleProductIds.values().next().value;
+            setReviewingProduct(firstEligible);
+          }
+        } catch (err) {
+          // Even if API fails, allow reviews - server will reject duplicates
+          
+          // Auto-open first product if in review mode
+          if (isReviewMode && order.items?.length > 0) {
+            const firstProduct = (order.items[0].product?._id || order.items[0].product)?.toString();
+            setReviewingProduct(firstProduct);
+          }
+        }
+      }
+    };
+    checkReviewEligibility();
+  }, [order, id, isAdmin, isSeller, isReviewMode]);
+
+  const handleReviewSuccess = (productId) => {
+    setReviewingProduct(null);
+    setAlreadyReviewedProducts((prev) => new Set([...prev, productId?.toString()]));
+    setReviewedProducts((prev) => new Set([...prev, productId?.toString()]));
+  };
+
   if (isLoading || !order) {
     return (
       <div className="container py-5 text-center">
@@ -73,33 +126,102 @@ const OrderDetail = () => {
   return (
     <div className="container py-4">
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h2>Order Details</h2>
-        <Link to={getBackToOrdersLink()} className="btn btn-outline-secondary btn-sm">
-          Back to Orders
+        <div>
+          <h2 className="mb-1"><i className="bi bi-receipt me-2"></i>Order Details</h2>
+          <p className="text-muted mb-0">View your order information</p>
+        </div>
+        <Link to={getBackToOrdersLink()} className="btn btn-outline-secondary btn-sm rounded-pill">
+          <i className="bi bi-arrow-left me-2"></i>Back to Orders
         </Link>
       </div>
 
+      {/* Review mode banner */}
+      {isReviewMode && order?.status === "delivered" && !isAdmin && !isSeller && (
+        <div className="alert alert-info d-flex align-items-center mb-3" role="alert">
+          <i className="bi bi-star-fill me-2 fs-5"></i>
+          <div>
+            <strong>Review Mode</strong> — Click the <span className="badge bg-warning text-dark">Review</span> button next to any product below to write your review.
+          </div>
+        </div>
+      )}
+
       <div className="row g-3">
         <div className="col-lg-8">
-          <div className="card mb-3">
+          <div className="card border-0 shadow-sm mb-3">
             <div className="card-body">
-              <h5 className="card-title">Items</h5>
-              {order.items?.map((item) => (
-                <div
-                  key={item._id}
-                  className="d-flex justify-content-between border-bottom py-2"
-                >
-                  <div>
-                    <div className="fw-semibold">
-                      {item.name || item.product?.name}
+              <h5 className="card-title"><i className="bi bi-box me-2"></i>Items</h5>
+              {order.items?.map((item) => {
+                const productId = item.product?._id || item.product;
+                const productIdStr = productId?.toString();
+                const isAlreadyReviewed = alreadyReviewedProducts.has(productIdStr);
+                const hasJustReviewed = reviewedProducts.has(productIdStr);
+                const canReview = order.status === "delivered" && !isAlreadyReviewed && !hasJustReviewed;
+                const isReviewing = reviewingProduct === productIdStr;
+
+                return (
+                  <div key={item._id}>
+                    <div className="d-flex justify-content-between border-bottom py-2">
+                      <div className="d-flex align-items-center">
+                        <div>
+                          <div className="fw-semibold">
+                            <Link
+                              to={`/products/${productIdStr}`}
+                              className="text-decoration-none"
+                            >
+                              {item.name || item.product?.name}
+                            </Link>
+                          </div>
+                          <small className="text-muted">
+                            Qty: {item.quantity} × ₹
+                            {(item.price || 0).toFixed(2)}
+                          </small>
+                        </div>
+                      </div>
+                      <div className="d-flex align-items-center gap-2">
+                        <span>
+                          ₹{(item.quantity * (item.price || 0)).toFixed(2)}
+                        </span>
+                        {!isAdmin && !isSeller && (
+                          <>
+                            {canReview && !isReviewing && (
+                              <button
+                                className="btn btn-outline-warning btn-sm rounded-pill"
+                                onClick={() => setReviewingProduct(productIdStr)}
+                              >
+                                <i className="bi bi-star me-1"></i>Review
+                              </button>
+                            )}
+                            {(hasJustReviewed || isAlreadyReviewed) && (
+                              <span className="badge bg-success rounded-pill">
+                                <i className="bi bi-check-circle me-1"></i>
+                                Reviewed
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <small className="text-muted">
-                      Qty: {item.quantity} × ₹{(item.price || 0).toFixed(2)}
-                    </small>
+
+                    {/* Inline Review Form */}
+                    {isReviewing && (
+                      <div className="p-3 bg-light rounded mb-2">
+                        <ReviewForm
+                          productId={productIdStr}
+                          orderId={id}
+                          productName={item.name || item.product?.name}
+                          onSuccess={() => handleReviewSuccess(productIdStr)}
+                        />
+                        <button
+                          className="btn btn-sm btn-outline-secondary mt-2 rounded-pill"
+                          onClick={() => setReviewingProduct(null)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <div>₹{(item.quantity * (item.price || 0)).toFixed(2)}</div>
-                </div>
-              ))}
+                );
+              })}
               {(!order.items || order.items.length === 0) && (
                 <p className="text-muted mb-0">
                   No items found for this order.
@@ -110,9 +232,9 @@ const OrderDetail = () => {
         </div>
 
         <div className="col-lg-4">
-          <div className="card mb-3">
+          <div className="card border-0 shadow-sm mb-3">
             <div className="card-body">
-              <h5 className="card-title">Summary</h5>
+              <h5 className="card-title"><i className="bi bi-clipboard-data me-2"></i>Summary</h5>
               <p className="mb-1">
                 <strong>Order #:</strong>{" "}
                 {order.orderNumber || order._id.slice(-8)}
@@ -124,7 +246,7 @@ const OrderDetail = () => {
               <p className="mb-1">
                 <strong>Status:</strong>{" "}
                 <span
-                  className={`badge text-uppercase bg-${getStatusBadge(
+                  className={`badge rounded-pill text-uppercase bg-${getStatusBadge(
                     order.status
                   )}`}
                 >
@@ -165,7 +287,7 @@ const OrderDetail = () => {
                 <>
                   <hr />
                   <button
-                    className="btn btn-danger btn-sm w-100"
+                    className="btn btn-danger btn-sm w-100 rounded-pill"
                     onClick={() => setShowCancelModal(true)}
                   >
                     <i className="bi bi-x-circle me-2"></i>Cancel Order
@@ -179,9 +301,9 @@ const OrderDetail = () => {
           </div>
 
           {order.shippingAddress && (
-            <div className="card">
+            <div className="card border-0 shadow-sm">
               <div className="card-body">
-                <h5 className="card-title">Shipping Information</h5>
+                <h5 className="card-title"><i className="bi bi-truck me-2"></i>Shipping Information</h5>
                 {order.shippingAddress.fullName && (
                   <p className="mb-1">
                     <strong>Name:</strong> {order.shippingAddress.fullName}

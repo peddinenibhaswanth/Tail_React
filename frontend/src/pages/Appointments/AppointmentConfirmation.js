@@ -11,7 +11,7 @@ const AppointmentConfirmation = () => {
     <Container className="py-5">
       <Row className="justify-content-center">
         <Col lg={6}>
-          <Card className="shadow-sm text-center">
+          <Card className="shadow-sm text-center border-0">
             <Card.Body className="p-5">
               <div className="mb-4">
                 <div
@@ -25,7 +25,7 @@ const AppointmentConfirmation = () => {
                 </div>
               </div>
 
-              <h2 className="fw-bold mb-3">Appointment Confirmed!</h2>
+              <h2 className="fw-bold mb-3">Appointment Confirmed! 🎉</h2>
 
               <p className="text-muted mb-4">
                 Your appointment has been successfully booked. You will receive

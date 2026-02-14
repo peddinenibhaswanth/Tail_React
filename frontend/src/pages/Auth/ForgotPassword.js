@@ -57,14 +57,18 @@ const ForgotPassword = () => {
   };
 
   return (
+    <div style={{ backgroundColor: 'var(--neutral-50)', minHeight: '80vh' }} className="d-flex align-items-center">
     <Container className="py-5">
       <Row className="justify-content-center">
         <Col md={6} lg={5}>
-          <Card className="shadow">
-            <Card.Body className="p-5">
+          <Card className="auth-card shadow-sm border-0">
+            <Card.Body className="p-4 p-md-5">
               <div className="text-center mb-4">
+                <div className="feature-icon mx-auto mb-3">
+                  <i className="bi bi-key-fill fs-4"></i>
+                </div>
                 <h2 className="fw-bold">Forgot Password?</h2>
-                <p className="text-muted">
+                <p className="text-muted small">
                   Enter your email and we'll send you a reset link
                 </p>
               </div>
@@ -108,7 +112,7 @@ const ForgotPassword = () => {
                   <Button
                     type="submit"
                     variant="primary"
-                    className="w-100 mb-3"
+                    className="w-100 mb-3 rounded-pill py-2 fw-semibold"
                     disabled={isLoading}
                   >
                     {isLoading ? "Sending..." : "Send Reset Link"}
@@ -124,7 +128,7 @@ const ForgotPassword = () => {
 
               {success && (
                 <div className="text-center mt-3">
-                  <Link to="/login" className="btn btn-outline-primary">
+                  <Link to="/login" className="btn btn-outline-primary rounded-pill px-4">
                     Return to Login
                   </Link>
                 </div>
@@ -134,6 +138,7 @@ const ForgotPassword = () => {
         </Col>
       </Row>
     </Container>
+    </div>
   );
 };
 

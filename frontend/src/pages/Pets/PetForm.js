@@ -18,11 +18,13 @@ import {
 } from "../../redux/slices/petSlice";
 import { PET_SPECIES, PET_SIZES, PET_GENDERS } from "../../utils/constants";
 import Loading from "../../components/common/Loading";
+import useAuth from "../../hooks/useAuth";
 
 const PetForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { user } = useAuth();
   const {
     pet: currentPet,
     isLoading,
@@ -91,11 +93,13 @@ const PetForm = () => {
   useEffect(() => {
     // Only redirect if form was submitted AND operation was successful
     if (formSubmitted && isSuccess) {
+      const redirectPath =
+        user?.role === "organization" ? "/organization/pets" : "/admin/pets";
       setTimeout(() => {
-        navigate("/admin/pets");
+        navigate(redirectPath);
       }, 1500);
     }
-  }, [formSubmitted, isSuccess, navigate]);
+  }, [formSubmitted, isSuccess, navigate, user]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -213,9 +217,10 @@ const PetForm = () => {
     <Container className="py-4">
       <Row className="justify-content-center">
         <Col lg={8}>
-          <Card className="shadow-sm">
+          <Card className="border-0 shadow-sm">
             <Card.Body className="p-4">
               <h3 className="fw-bold mb-4">
+                <i className={`bi ${isEditMode ? 'bi-pencil-square' : 'bi-plus-heart'} me-2 text-primary`}></i>
                 {isEditMode ? "Edit Pet" : "Add New Pet"}
               </h3>
 
@@ -417,11 +422,18 @@ const PetForm = () => {
                         name="status"
                         value={formData.status}
                         onChange={handleChange}
+                        disabled={isEditMode && currentPet?.status === "adopted"}
                       >
                         <option value="available">Available</option>
                         <option value="pending">Pending</option>
                         <option value="adopted">Adopted</option>
                       </Form.Select>
+                      {isEditMode && currentPet?.status === "adopted" && (
+                        <Form.Text className="text-warning">
+                          <i className="bi bi-exclamation-triangle me-1"></i>
+                          This pet has been adopted. Status cannot be changed.
+                        </Form.Text>
+                      )}
                     </Form.Group>
                   </Col>
 
@@ -511,7 +523,7 @@ const PetForm = () => {
                 </Form.Group>
 
                 <div className="d-flex gap-2">
-                  <Button variant="primary" type="submit" disabled={isLoading}>
+                  <Button variant="primary" type="submit" disabled={isLoading} className="rounded-pill px-4">
                     {isLoading
                       ? "Saving..."
                       : isEditMode
@@ -520,7 +532,8 @@ const PetForm = () => {
                   </Button>
                   <Button
                     variant="outline-secondary"
-                    onClick={() => navigate("/admin/pets")}
+                    className="rounded-pill px-4"
+                    onClick={() => navigate(user?.role === "organization" ? "/organization/pets" : "/admin/pets")}
                     disabled={isLoading}
                   >
                     Cancel

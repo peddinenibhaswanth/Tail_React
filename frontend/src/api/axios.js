@@ -11,6 +11,8 @@ const axiosInstance = axios.create({
   withCredentials: true, // Keep for CORS support
 });
 
+// Request interceptor - Add JWT token to every request
+// This automatically attaches the token stored in localStorage to the Authorization header
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -31,6 +33,7 @@ axiosInstance.interceptors.response.use(
     // Handle network errors (backend down)
     if (!error.response) {
       console.error("CRITICAL: Backend connection failed!");
+      // You could also dispatch a global error action here if you had access to the store
       return Promise.reject({
         message: "Server is currently unreachable. Please ensure the backend is running.",
         isNetworkError: true,
