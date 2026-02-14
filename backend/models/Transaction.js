@@ -1,5 +1,51 @@
 const mongoose = require("mongoose");
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Transaction:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         transactionId:
+ *           type: string
+ *         order:
+ *           type: string
+ *           nullable: true
+ *         appointment:
+ *           type: string
+ *           nullable: true
+ *         adoption:
+ *           type: string
+ *           nullable: true
+ *         user:
+ *           type: string
+ *         type:
+ *           type: string
+ *           enum: [sale, refund, payout, commission_fee, tax_payment]
+ *         amount:
+ *           type: number
+ *         tax:
+ *           type: number
+ *         commission:
+ *           type: number
+ *         netAmount:
+ *           type: number
+ *         status:
+ *           type: string
+ *           enum: [pending, completed, failed, reversed]
+ *         description:
+ *           type: string
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ */
+
 const transactionSchema = new mongoose.Schema(
     {
         transactionId: {

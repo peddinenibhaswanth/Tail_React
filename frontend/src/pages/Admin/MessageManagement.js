@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Container,
   Card,
@@ -24,6 +25,7 @@ import useAuth from "../../hooks/useAuth";
 
 const MessageManagement = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { messages, isLoading, isError, isSuccess, errorMessage } = useSelector(
     (state) => state.admin
@@ -37,6 +39,10 @@ const MessageManagement = () => {
   const [replyText, setReplyText] = useState("");
   const [replySending, setReplySending] = useState(false);
   const [replySuccess, setReplySuccess] = useState(false);
+
+  useEffect(() => {
+    dispatch(resetAdmin());
+  }, [dispatch]);
 
   useEffect(() => {
     dispatch(getAllMessages());
@@ -161,6 +167,9 @@ const MessageManagement = () => {
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
+          <Button variant="outline-secondary" size="sm" onClick={() => navigate("/admin")} className="mb-2">
+            <i className="bi bi-arrow-left me-2"></i>Back to Dashboard
+          </Button>
           <h2 className="mb-1">Contact Messages</h2>
           <p className="text-muted mb-0">
             View and respond to customer inquiries
@@ -168,11 +177,11 @@ const MessageManagement = () => {
         </div>
         <div>
           {unreadCount > 0 && (
-            <Badge bg="danger" className="fs-6 me-2">
+            <Badge bg="danger" className="rounded-pill fs-6 me-2">
               {unreadCount} Unread
             </Badge>
           )}
-          <Badge bg="primary" className="fs-6">
+          <Badge bg="primary" className="rounded-pill fs-6">
             Total: {messages.length}
           </Badge>
         </div>
@@ -187,7 +196,7 @@ const MessageManagement = () => {
       {/* Statistics Cards */}
       <Row className="mb-4">
         <Col md={3}>
-          <Card className="text-center bg-primary bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-primary bg-opacity-10">
             <Card.Body>
               <h3>{messages.length}</h3>
               <small className="text-muted">Total Messages</small>
@@ -195,7 +204,7 @@ const MessageManagement = () => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="text-center bg-danger bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-danger bg-opacity-10">
             <Card.Body>
               <h3>{unreadCount}</h3>
               <small className="text-muted">Unread</small>
@@ -203,7 +212,7 @@ const MessageManagement = () => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="text-center bg-success bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-success bg-opacity-10">
             <Card.Body>
               <h3>{repliedCount}</h3>
               <small className="text-muted">Replied</small>
@@ -211,7 +220,7 @@ const MessageManagement = () => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="text-center bg-secondary bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-secondary bg-opacity-10">
             <Card.Body>
               <h3>{messages.length - unreadCount - repliedCount}</h3>
               <small className="text-muted">Read (No Reply)</small>
@@ -220,7 +229,7 @@ const MessageManagement = () => {
         </Col>
       </Row>
 
-      <Card className="mb-4">
+      <Card className="mb-4 border-0 shadow-sm">
         <Card.Body>
           <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
             <Form.Control

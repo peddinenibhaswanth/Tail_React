@@ -97,23 +97,37 @@ const Contact = () => {
   };
 
   return (
-    <Container className="py-5">
-      <Row className="mb-5">
-        <Col lg={8} className="mx-auto text-center">
-          <h1 className="display-4 mb-3">Contact Us</h1>
-          <p className="lead text-muted">
-            Have questions? We'd love to hear from you. Send us a message and
-            we'll respond as soon as possible.
-          </p>
-        </Col>
-      </Row>
+    <div>
+      {/* Contact Hero */}
+      <section className="about-hero" style={{ padding: '3rem 0' }}>
+        <Container>
+          <Row className="justify-content-center">
+            <Col lg={8} className="text-center">
+              <span className="badge bg-white bg-opacity-25 text-white px-3 py-2 rounded-pill mb-3 fw-semibold">
+                <i className="bi bi-envelope me-1"></i> Get In Touch
+              </span>
+              <h1 className="display-5 fw-bold text-white mb-3">Contact Us</h1>
+              <p className="lead text-white" style={{ opacity: 0.9 }}>
+                Have questions? We'd love to hear from you. Send us a message and
+                we'll respond as soon as possible.
+              </p>
+            </Col>
+          </Row>
+        </Container>
+      </section>
 
-      <Row>
-        {/* Contact Form */}
-        <Col lg={8}>
-          <Card className="border-0 shadow-sm">
-            <Card.Body className="p-4">
-              <h4 className="mb-4">Send us a Message</h4>
+      <Container className="py-5">
+        <Row>
+          {/* Contact Form */}
+          <Col lg={8}>
+            <Card className="border-0 shadow-sm">
+              <Card.Body className="p-4 p-md-5">
+                <div className="d-flex align-items-center mb-4">
+                  <div className="feature-icon me-3">
+                    <i className="bi bi-chat-dots fs-4"></i>
+                  </div>
+                  <h4 className="mb-0 fw-bold">Send us a Message</h4>
+                </div>
 
               {!isAuthenticated && (
                 <Alert variant="info">
@@ -192,6 +206,7 @@ const Contact = () => {
                     type="submit"
                     variant="primary"
                     size="lg"
+                    className="rounded-pill px-4"
                     disabled={isLoading}
                   >
                     {isLoading ? (
@@ -222,10 +237,13 @@ const Contact = () => {
 
         {/* Contact Information */}
         <Col lg={4} className="mt-4 mt-lg-0">
-          <Card className="border-0 bg-light mb-4">
+          <Card className="contact-info-card border-0 shadow-sm mb-4">
             <Card.Body className="p-4">
-              <h5 className="mb-3">📍 Visit Us</h5>
-              <p className="text-muted mb-0">
+              <div className="contact-icon mb-3">
+                <i className="bi bi-geo-alt-fill"></i>
+              </div>
+              <h5 className="fw-bold mb-3">Visit Us</h5>
+              <p className="text-muted mb-0" style={{ lineHeight: 1.8 }}>
                 123 Pet Street
                 <br />
                 Animal City, AC 12345
@@ -235,18 +253,24 @@ const Contact = () => {
             </Card.Body>
           </Card>
 
-          <Card className="border-0 bg-light mb-4">
+          <Card className="contact-info-card border-0 shadow-sm mb-4">
             <Card.Body className="p-4">
-              <h5 className="mb-3">📞 Call Us</h5>
+              <div className="contact-icon mb-3">
+                <i className="bi bi-telephone-fill"></i>
+              </div>
+              <h5 className="fw-bold mb-3">Call Us</h5>
               <p className="text-muted mb-2">Phone: +1 (555) 123-4567</p>
               <p className="text-muted mb-0">Mon-Fri: 9:00 AM - 6:00 PM</p>
             </Card.Body>
           </Card>
 
-          <Card className="border-0 bg-light">
+          <Card className="contact-info-card border-0 shadow-sm">
             <Card.Body className="p-4">
-              <h5 className="mb-3">✉️ Email Us</h5>
-              <p className="text-muted mb-0">
+              <div className="contact-icon mb-3">
+                <i className="bi bi-envelope-fill"></i>
+              </div>
+              <h5 className="fw-bold mb-3">Email Us</h5>
+              <p className="text-muted mb-0" style={{ lineHeight: 1.8 }}>
                 support@tailwaggers.com
                 <br />
                 info@tailwaggers.com
@@ -256,6 +280,7 @@ const Contact = () => {
         </Col>
       </Row>
     </Container>
+  </div>
   );
 };
 

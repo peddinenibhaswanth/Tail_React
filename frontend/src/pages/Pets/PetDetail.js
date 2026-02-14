@@ -8,9 +8,9 @@ import {
   Button,
   ListGroup,
 } from "react-bootstrap";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { getPet, resetPets } from "../../redux/slices/petSlice";
+import { getPet } from "../../redux/slices/petSlice";
 import useAuth from "../../hooks/useAuth";
 import Loading from "../../components/common/Loading";
 import { formatDate } from "../../utils/formatters";
@@ -25,7 +25,8 @@ const PetDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const isCustomer = !user || user.role === "customer";
   const {
     pet: currentPet,
     isLoading,
@@ -37,7 +38,6 @@ const PetDetail = () => {
     if (id) {
       dispatch(getPet(id));
     }
-    return () => dispatch(resetPets());
   }, [dispatch, id]);
 
   const getStatusVariant = (status) => {
@@ -77,7 +77,7 @@ const PetDetail = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !currentPet) {
     return <Loading />;
   }
 
@@ -114,15 +114,15 @@ const PetDetail = () => {
     <Container className="py-4">
       <Button
         variant="outline-secondary"
-        className="mb-3"
+        className="mb-3 rounded-pill px-3"
         onClick={() => navigate("/pets")}
       >
-        ← Back to All Pets
+        <i className="bi bi-arrow-left me-1"></i>Back to All Pets
       </Button>
 
       <Row>
         <Col lg={6}>
-          <Card className="border-0 shadow-sm">
+          <Card className="border-0 shadow-sm overflow-hidden">
             <Card.Img
               variant="top"
               src={getImageUrl(pet.mainImage || pet.images?.[0])}
@@ -162,10 +162,10 @@ const PetDetail = () => {
 
         <Col lg={6}>
           <div className="mb-3">
-            <Badge bg={getStatusVariant(petStatus)} className="mb-2">
+            <Badge bg={getStatusVariant(petStatus)} className="mb-2 rounded-pill px-3 py-2 text-uppercase fw-semibold" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>
               {petStatus.toUpperCase()}
             </Badge>
-            <h2 className="fw-bold mb-3">{pet.name}</h2>
+            <h2 className="fw-bold mb-2">{pet.name}</h2>
             <p className="text-muted lead">{pet.breed}</p>
           </div>
 
@@ -200,9 +200,9 @@ const PetDetail = () => {
             </ListGroup.Item>
           </ListGroup>
 
-          <Card className="bg-light border-0 mb-4">
-            <Card.Body>
-              <h5 className="fw-bold mb-2">About {pet.name}</h5>
+          <Card className="border-0 shadow-sm mb-4" style={{ backgroundColor: 'var(--neutral-50)' }}>
+            <Card.Body className="p-4">
+              <h5 className="fw-bold mb-2"><i className="bi bi-info-circle me-2 text-primary"></i>About {pet.name}</h5>
               <p className="mb-0">
                 {pet.description || "No description available."}
               </p>
@@ -221,10 +221,10 @@ const PetDetail = () => {
               </Card>
             )}
 
-          {petStatus === "available" && (
+          {petStatus === "available" && isCustomer && (
             <div className="d-grid gap-2">
-              <Button variant="primary" size="lg" onClick={handleAdoptClick}>
-                Apply for Adoption
+              <Button variant="primary" size="lg" onClick={handleAdoptClick} className="rounded-pill fw-semibold py-3">
+                <i className="bi bi-heart-fill me-2"></i>Apply for Adoption
               </Button>
             </div>
           )}

@@ -52,3 +52,9 @@ export const deletePet = async (id) => {
   const response = await axios.delete(`/api/pets/${id}`);
   return response.data;
 };
+
+// Get organization's own pets
+export const getMyPets = async () => {
+  const response = await axios.get("/api/pets/my-pets");
+  return response.data;
+};

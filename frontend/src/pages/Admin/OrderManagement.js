@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Container,
   Card,
@@ -18,10 +18,14 @@ import {
   getAllOrders,
   updateOrderStatus,
   resetOrders,
+  restoreOrderStock,
 } from "../../redux/slices/orderSlice";
+import useAuth from "../../hooks/useAuth";
 
 const OrderManagement = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { isStaff } = useAuth();
   const { orders, isLoading, isError, isSuccess, message } = useSelector(
     (state) => state.orders
   );
@@ -42,6 +46,10 @@ const OrderManagement = () => {
       dispatch(resetOrders());
       dispatch(getAllOrders({}));
     }
+    if (isSuccess && message?.includes("restored")) {
+      dispatch(resetOrders());
+      dispatch(getAllOrders({}));
+    }
   }, [isSuccess, message, dispatch]);
 
   const handleStatusUpdate = (order) => {
@@ -53,6 +61,12 @@ const OrderManagement = () => {
   const confirmStatusUpdate = () => {
     if (selectedOrder && newStatus) {
       dispatch(updateOrderStatus({ id: selectedOrder._id, status: newStatus }));
+    }
+  };
+
+  const handleRestoreStock = (order) => {
+    if (window.confirm(`Restore stock for all items in order #${order._id.slice(-8)}? This will add back the ordered quantities to product stock.`)) {
+      dispatch(restoreOrderStock(order._id));
     }
   };
 
@@ -132,13 +146,16 @@ const OrderManagement = () => {
     ).length,
     totalRevenue: ordersList
       .filter((o) => (o.orderStatus || o.status) === "delivered")
-      .reduce((sum, o) => sum + (o.total || 0), 0),
+      .reduce((sum, o) => sum + (o.total || o.totalPrice || o.totalAmount || 0), 0),
   };
 
   return (
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
+          <Button variant="outline-secondary" size="sm" onClick={() => navigate("/admin")} className="mb-2">
+            <i className="bi bi-arrow-left me-2"></i>Back to Dashboard
+          </Button>
           <h2 className="mb-1">Order Management</h2>
           <p className="text-muted mb-0">Manage all customer orders</p>
         </div>
@@ -158,7 +175,7 @@ const OrderManagement = () => {
       {/* Statistics Cards */}
       <Row className="mb-4">
         <Col md={2}>
-          <Card className="text-center bg-primary bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-primary bg-opacity-10">
             <Card.Body className="py-3">
               <h4 className="mb-0">{stats.total}</h4>
               <small className="text-muted">Total Orders</small>
@@ -166,7 +183,7 @@ const OrderManagement = () => {
           </Card>
         </Col>
         <Col md={2}>
-          <Card className="text-center bg-warning bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-warning bg-opacity-10">
             <Card.Body className="py-3">
               <h4 className="mb-0">{stats.pending}</h4>
               <small className="text-muted">Pending</small>
@@ -174,7 +191,7 @@ const OrderManagement = () => {
           </Card>
         </Col>
         <Col md={2}>
-          <Card className="text-center bg-info bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-info bg-opacity-10">
             <Card.Body className="py-3">
               <h4 className="mb-0">{stats.processing}</h4>
               <small className="text-muted">Processing</small>
@@ -182,7 +199,7 @@ const OrderManagement = () => {
           </Card>
         </Col>
         <Col md={2}>
-          <Card className="text-center bg-primary bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-primary bg-opacity-10">
             <Card.Body className="py-3">
               <h4 className="mb-0">{stats.shipped}</h4>
               <small className="text-muted">Shipped</small>
@@ -190,7 +207,7 @@ const OrderManagement = () => {
           </Card>
         </Col>
         <Col md={2}>
-          <Card className="text-center bg-success bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-success bg-opacity-10">
             <Card.Body className="py-3">
               <h4 className="mb-0">{stats.delivered}</h4>
               <small className="text-muted">Delivered</small>
@@ -198,7 +215,7 @@ const OrderManagement = () => {
           </Card>
         </Col>
         <Col md={2}>
-          <Card className="text-center bg-success bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-success bg-opacity-10">
             <Card.Body className="py-3">
               <h4 className="mb-0">₹{stats.totalRevenue.toFixed(0)}</h4>
               <small className="text-muted">Revenue</small>
@@ -207,7 +224,7 @@ const OrderManagement = () => {
         </Col>
       </Row>
 
-      <Card>
+      <Card className="border-0 shadow-sm">
         <Card.Body>
           <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
             <Form.Control
@@ -279,7 +296,7 @@ const OrderManagement = () => {
                       <td>
                         <strong>
                           ₹
-                          {(order.total || 0).toFixed(
+                          {(order.total || order.totalPrice || order.totalAmount || 0).toFixed(
                             2
                           )}
                         </strong>
@@ -295,14 +312,27 @@ const OrderManagement = () => {
                         {getStatusBadge(order.orderStatus || order.status)}
                       </td>
                       <td>
-                        <Button
-                          variant="outline-primary"
-                          size="sm"
-                          className="me-1"
-                          onClick={() => handleStatusUpdate(order)}
-                        >
-                          Update
-                        </Button>
+                        {!isStaff && (
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            className="me-1"
+                            onClick={() => handleStatusUpdate(order)}
+                          >
+                            Update
+                          </Button>
+                        )}
+                        {(order.orderStatus || order.status) === "cancelled" && !isStaff && (
+                          <Button
+                            variant="outline-warning"
+                            size="sm"
+                            className="me-1"
+                            title="Restore product stock for this cancelled order"
+                            onClick={() => handleRestoreStock(order)}
+                          >
+                            Restore Stock
+                          </Button>
+                        )}
                         <Link
                           to={`/orders/${order._id}`}
                           className="btn btn-outline-info btn-sm"
@@ -319,7 +349,8 @@ const OrderManagement = () => {
         </Card.Body>
       </Card>
 
-      {/* Status Update Modal */}
+      {/* Status Update Modal - only for sellers */}
+      {!isStaff && (
       <Modal show={showStatusModal} onHide={() => setShowStatusModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Update Order Status</Modal.Title>
@@ -337,6 +368,8 @@ const OrderManagement = () => {
                 <strong>Total:</strong> ₹
                 {(
                   selectedOrder.total ||
+                  selectedOrder.totalPrice ||
+                  selectedOrder.totalAmount ||
                   0
                 ).toFixed(2)}
               </p>
@@ -370,6 +403,7 @@ const OrderManagement = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+      )}
     </Container>
   );
 };

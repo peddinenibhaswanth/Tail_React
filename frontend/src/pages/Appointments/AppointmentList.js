@@ -11,13 +11,13 @@ import {
   Modal,
   Alert,
 } from "react-bootstrap";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   getUserAppointments,
   getVetAppointments,
+  getAllAppointments,
   updateAppointmentStatus,
-  resetAppointments,
 } from "../../redux/slices/appointmentSlice";
 import useAuth from "../../hooks/useAuth";
 import Loading from "../../components/common/Loading";
@@ -26,15 +26,20 @@ import { formatDate } from "../../utils/formatters";
 const AppointmentList = () => {
   const dispatch = useDispatch();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { appointments, isLoading, isError, isSuccess, message } = useSelector(
     (state) => state.appointments
   );
 
+  // Read initial filter from URL query params (e.g. ?status=upcoming)
+  const initialStatus = searchParams.get("status") || "";
   const [filter, setFilter] = useState({
-    status: "",
+    status: initialStatus === "upcoming" ? "" : initialStatus,
     date: "",
   });
+  const [showUpcomingOnly, setShowUpcomingOnly] = useState(initialStatus === "upcoming");
 
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -50,24 +55,27 @@ const AppointmentList = () => {
   const isAdminView = location.pathname.includes("/admin/");
 
   useEffect(() => {
-    if (isVetView || user?.role === "veterinary") {
+    if (isAdminView || ["admin", "co-admin"].includes(user?.role)) {
+      dispatch(getAllAppointments({ limit: 200 }));
+    } else if (isVetView || user?.role === "veterinary") {
       dispatch(getVetAppointments(filter));
     } else {
       dispatch(getUserAppointments());
     }
-    return () => dispatch(resetAppointments());
-  }, [dispatch, isVetView, user?.role]);
+  }, [dispatch, isVetView, isAdminView, user?.role]);
 
   useEffect(() => {
     if (isSuccess && message?.includes("updated")) {
       // Refresh appointments after status update
-      if (isVetView || user?.role === "veterinary") {
+      if (isAdminView || ["admin", "co-admin"].includes(user?.role)) {
+        dispatch(getAllAppointments({ limit: 200 }));
+      } else if (isVetView || user?.role === "veterinary") {
         dispatch(getVetAppointments(filter));
       } else {
         dispatch(getUserAppointments());
       }
     }
-  }, [isSuccess, message, dispatch, isVetView, user?.role, filter]);
+  }, [isSuccess, message, dispatch, isVetView, isAdminView, user?.role, filter]);
 
   const getStatusVariant = (status) => {
     switch (status?.toLowerCase()) {
@@ -120,10 +128,15 @@ const AppointmentList = () => {
 
   const resetFilters = () => {
     setFilter({ status: "", date: "" });
+    setShowUpcomingOnly(false);
   };
 
   // Filter appointments locally
   const filteredAppointments = appointments?.filter((apt) => {
+    if (showUpcomingOnly) {
+      const aptDate = new Date(apt.date);
+      if (aptDate < new Date() || apt.status === "cancelled" || apt.status === "completed") return false;
+    }
     if (filter.status && apt.status !== filter.status) return false;
     if (filter.date) {
       const aptDate = new Date(apt.date).toISOString().split("T")[0];
@@ -132,20 +145,25 @@ const AppointmentList = () => {
     return true;
   });
 
-  if (isLoading) {
+  if (isLoading && !filteredAppointments?.length) {
     return <Loading />;
   }
 
-  const pageTitle = isVetView ? "My Appointments" : "All Appointments";
-  const canUpdateStatus =
-    user?.role === "veterinary" || ["admin", "co-admin"].includes(user?.role);
+  const pageTitle = isAdminView ? "All Appointments" : isVetView ? "My Appointments" : "All Appointments";
+  const canUpdateStatus = user?.role === "veterinary";
 
   return (
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="fw-bold">{pageTitle}</h2>
-        {!isVetView && (
-          <Link to="/appointments/book" className="btn btn-primary">
+        <div>
+          <Button variant="outline-secondary" size="sm" onClick={() => navigate(isAdminView ? "/admin" : isVetView ? "/vet/dashboard" : "/dashboard")} className="mb-2">
+            <i className="bi bi-arrow-left me-2"></i>Back to Dashboard
+          </Button>
+          <h2 className="fw-bold mb-1">{pageTitle}</h2>
+          <p className="text-muted mb-0 small">Manage your veterinary appointments</p>
+        </div>
+        {!isVetView && !isAdminView && !["admin", "co-admin"].includes(user?.role) && (
+          <Link to="/appointments/book" className="btn btn-primary rounded-pill px-3">
             <i className="bi bi-plus-circle me-2"></i>Book Appointment
           </Link>
         )}
@@ -214,7 +232,14 @@ const AppointmentList = () => {
               <thead className="bg-light">
                 <tr>
                   <th>Pet</th>
-                  <th>{isVetView ? "Customer" : "Veterinarian"}</th>
+                  {isAdminView ? (
+                    <>
+                      <th>Customer</th>
+                      <th>Veterinarian</th>
+                    </>
+                  ) : (
+                    <th>{isVetView ? "Customer" : "Veterinarian"}</th>
+                  )}
                   <th>Reason</th>
                   <th>Date & Time</th>
                   <th>Status</th>
@@ -230,26 +255,34 @@ const AppointmentList = () => {
                         {appointment.petType}
                       </small>
                     </td>
-                    <td>
-                      {isVetView ? (
-                        <>
+                    {isAdminView ? (
+                      <>
+                        <td>
                           <div>{appointment.customer?.name || "N/A"}</div>
                           <small className="text-muted">
-                            {appointment.customer?.phoneNumber ||
-                              appointment.customer?.email ||
-                              ""}
+                            {appointment.customer?.email || ""}
                           </small>
-                        </>
-                      ) : (
-                        <>
-                          <div>Dr. {appointment.veterinary?.name || "N/A"}</div>
-                          <small className="text-muted">
-                            {appointment.veterinary?.vetInfo?.specialization ||
-                              ""}
-                          </small>
-                        </>
-                      )}
-                    </td>
+                        </td>
+                        <td>Dr. {appointment.veterinary?.name || "N/A"}</td>
+                      </>
+                    ) : isVetView ? (
+                      <td>
+                        <div>{appointment.customer?.name || "N/A"}</div>
+                        <small className="text-muted">
+                          {appointment.customer?.phoneNumber ||
+                            appointment.customer?.email ||
+                            ""}
+                        </small>
+                      </td>
+                    ) : (
+                      <td>
+                        <div>Dr. {appointment.veterinary?.name || "N/A"}</div>
+                        <small className="text-muted">
+                          {appointment.veterinary?.vetInfo?.specialization ||
+                            ""}
+                        </small>
+                      </td>
+                    )}
                     <td>{appointment.reason || "General Checkup"}</td>
                     <td>
                       <div>{formatDate(appointment.date)}</div>
@@ -263,6 +296,19 @@ const AppointmentList = () => {
                       <Badge bg={getStatusVariant(appointment.status)}>
                         {appointment.status || "Pending"}
                       </Badge>
+                      {appointment.status === "cancelled" && appointment.cancelledByRole && (
+                        <div className="mt-1">
+                          <small className="text-muted">
+                            <i className="bi bi-info-circle me-1"></i>
+                            {isVetView
+                              ? (appointment.cancelledByRole === "veterinary" ? "You cancelled" : "by customer")
+                              : isAdminView
+                                ? (appointment.cancelledByRole === "customer" ? "by customer" : "by veterinarian")
+                                : (appointment.cancelledByRole === "customer" ? "You cancelled" : "by veterinarian")
+                            }
+                          </small>
+                        </div>
+                      )}
                     </td>
                     <td>
                       <Link

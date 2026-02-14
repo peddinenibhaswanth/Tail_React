@@ -61,9 +61,23 @@ export const getAvailableSlots = async (veterinary, date) => {
   return response.data;
 };
 
-// Get list of veterinaries
-export const getVeterinaries = async () => {
-  const response = await axios.get("/api/appointments/veterinaries");
+// Get list of veterinaries with location-based search
+export const getVeterinaries = async (params = {}) => {
+  const response = await axios.get("/api/appointments/veterinaries", { params });
+  return response.data;
+};
+
+// Reverse geocode coordinates to address
+export const reverseGeocode = async (lat, lng) => {
+  const response = await axios.get("/api/appointments/reverse-geocode", {
+    params: { lat, lng },
+  });
+  return response.data;
+};
+
+// Update vet address with geocoding
+export const updateVetAddress = async (data) => {
+  const response = await axios.post("/api/appointments/vet/update-address", data);
   return response.data;
 };
 

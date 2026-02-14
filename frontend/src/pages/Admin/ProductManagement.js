@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Container,
   Card,
@@ -24,8 +24,11 @@ import {
 } from "../../redux/slices/productSlice";
 import useAuth from "../../hooks/useAuth";
 
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
 const ProductManagement = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user, isSeller, isAdmin, isStaff } = useAuth();
   const { products, sellerProducts, isLoading, isError, isSuccess, message } =
     useSelector((state) => state.products);
@@ -143,6 +146,9 @@ const ProductManagement = () => {
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
+          <Button variant="outline-secondary" size="sm" onClick={() => navigate(isSeller && !isStaff ? "/seller/dashboard" : "/admin")} className="mb-2">
+            <i className="bi bi-arrow-left me-2"></i>Back to Dashboard
+          </Button>
           <h2 className="mb-1">
             {isSeller && !isStaff ? "My Products" : "Product Management"}
           </h2>
@@ -152,9 +158,11 @@ const ProductManagement = () => {
               : "Manage all products in the store"}
           </p>
         </div>
-        <Link to={getAddProductLink()} className="btn btn-primary">
-          <i className="bi bi-plus-circle me-2"></i>Add New Product
-        </Link>
+        {user?.role !== "admin" && user?.role !== "co-admin" && (
+          <Link to={getAddProductLink()} className="btn btn-primary rounded-pill">
+            <i className="bi bi-plus-circle me-2"></i>Add New Product
+          </Link>
+        )}
       </div>
 
       {isError && (
@@ -171,7 +179,7 @@ const ProductManagement = () => {
       {/* Statistics Cards */}
       <Row className="mb-4">
         <Col md={3}>
-          <Card className="text-center bg-primary bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-primary bg-opacity-10">
             <Card.Body>
               <h3>{(displayProducts || []).length}</h3>
               <small className="text-muted">Total Products</small>
@@ -179,7 +187,7 @@ const ProductManagement = () => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="text-center bg-success bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-success bg-opacity-10">
             <Card.Body>
               <h3>
                 {(displayProducts || []).filter((p) => p.stock > 0).length}
@@ -189,7 +197,7 @@ const ProductManagement = () => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="text-center bg-warning bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-warning bg-opacity-10">
             <Card.Body>
               <h3>
                 {
@@ -203,7 +211,7 @@ const ProductManagement = () => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="text-center bg-danger bg-opacity-10">
+          <Card className="text-center border-0 shadow-sm bg-danger bg-opacity-10">
             <Card.Body>
               <h3>
                 {(displayProducts || []).filter((p) => p.stock <= 0).length}
@@ -214,7 +222,7 @@ const ProductManagement = () => {
         </Col>
       </Row>
 
-      <Card>
+      <Card className="border-0 shadow-sm">
         <Card.Body>
           <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
             <Form.Control
@@ -270,7 +278,8 @@ const ProductManagement = () => {
                     <th>Category</th>
                     <th>Price</th>
                     <th>Stock</th>
-                    <th>Seller</th>
+                    <th>Rating</th>
+                    {!isSeller && <th>Seller</th>}
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -281,7 +290,7 @@ const ProductManagement = () => {
                         <Image
                           src={
                             product.mainImage
-                              ? `http://localhost:3000${product.mainImage}`
+                              ? `${API_URL}/uploads/products/${product.mainImage}`
                               : "/placeholder-product.png"
                           }
                           alt={product.name}
@@ -315,37 +324,71 @@ const ProductManagement = () => {
                         )}
                       </td>
                       <td>{getStockBadge(product.stock)}</td>
-                      <td>{product.seller?.name || "Admin"}</td>
                       <td>
-                        <Button
-                          variant="outline-info"
-                          size="sm"
-                          className="me-1"
-                          onClick={() => handleViewDetails(product)}
-                        >
-                          View
-                        </Button>
-                        <Button
-                          variant="outline-warning"
-                          size="sm"
-                          className="me-1"
-                          onClick={() => handleUpdateStock(product)}
-                        >
-                          Stock
-                        </Button>
-                        <Link
-                          to={getEditProductLink(product._id)}
-                          className="btn btn-outline-primary btn-sm me-1"
-                        >
-                          Edit
-                        </Link>
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => handleDelete(product)}
-                        >
-                          Delete
-                        </Button>
+                        {(() => {
+                          const avg = product.averageRating || product.rating || 0;
+                          const count = product.totalReviews || product.numReviews || 0;
+                          return (
+                            <div className="d-flex flex-column align-items-start gap-1">
+                              <div className="d-flex align-items-center gap-1">
+                                {[1,2,3,4,5].map((s) => (
+                                  <i key={s} className={`bi bi-star${s <= Math.round(avg) ? "-fill" : ""} text-warning`} style={{fontSize:"0.75rem"}}></i>
+                                ))}
+                                <span className="small fw-semibold text-warning ms-1">{avg > 0 ? avg.toFixed(1) : "—"}</span>
+                              </div>
+                              <Link
+                                to={`/products/${product._id}#reviews`}
+                                className="btn btn-outline-warning btn-sm rounded-pill py-0"
+                                style={{fontSize:"0.7rem"}}
+                              >
+                                <i className="bi bi-chat-left-text me-1"></i>{count} {count === 1 ? "Review" : "Reviews"}
+                              </Link>
+                            </div>
+                          );
+                        })()}
+                      </td>
+                      {!isSeller && <td>{product.seller?.name || "Admin"}</td>}
+                      <td>
+                        <div className="d-flex flex-wrap gap-1">
+                          <Button
+                            variant="outline-info"
+                            size="sm"
+                            className="rounded"
+                            title="View Details"
+                            onClick={() => handleViewDetails(product)}
+                          >
+                            <i className="bi bi-eye me-1"></i>View
+                          </Button>
+                          {!isStaff && (
+                            <Button
+                              variant="outline-warning"
+                              size="sm"
+                              className="rounded"
+                              title="Update Stock"
+                              onClick={() => handleUpdateStock(product)}
+                            >
+                              <i className="bi bi-boxes me-1"></i>Stock
+                            </Button>
+                          )}
+                          {!isStaff && (
+                            <Link
+                              to={getEditProductLink(product._id)}
+                              className="btn btn-outline-primary btn-sm rounded"
+                              title="Edit Product"
+                            >
+                              <i className="bi bi-pencil me-1"></i>Edit
+                            </Link>
+                          )}
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            className="rounded"
+                            title="Delete Product"
+                            onClick={() => handleDelete(product)}
+                          >
+                            <i className="bi bi-trash me-1"></i>Delete
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -372,7 +415,7 @@ const ProductManagement = () => {
                 <Image
                   src={
                     selectedProduct.mainImage
-                      ? `http://localhost:3000${selectedProduct.mainImage}`
+                      ? `${API_URL}/uploads/products/${selectedProduct.mainImage}`
                       : "/placeholder-product.png"
                   }
                   alt={selectedProduct.name}
@@ -419,12 +462,14 @@ const ProductManagement = () => {
           <Button variant="secondary" onClick={() => setShowDetailModal(false)}>
             Close
           </Button>
-          <Link
-            to={getEditProductLink(selectedProduct?._id)}
-            className="btn btn-primary"
-          >
-            Edit Product
-          </Link>
+          {!isStaff && (
+            <Link
+              to={getEditProductLink(selectedProduct?._id)}
+              className="btn btn-primary"
+            >
+              Edit Product
+            </Link>
+          )}
         </Modal.Footer>
       </Modal>
 
