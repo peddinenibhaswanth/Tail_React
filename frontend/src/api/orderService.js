@@ -47,3 +47,9 @@ export const getOrderStats = async () => {
   const response = await axios.get("/api/orders/admin/stats");
   return response.data;
 };
+
+// Restore stock for a cancelled order (admin)
+export const restoreOrderStock = async (id) => {
+  const response = await axios.post(`/api/orders/${id}/restore-stock`);
+  return response.data;
+};
