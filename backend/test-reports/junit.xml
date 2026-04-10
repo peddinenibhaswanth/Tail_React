@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="23" failures="0" errors="0" time="68.761">
+  <testsuite name="Public pets endpoints" errors="0" failures="0" skipped="0" timestamp="2026-04-16T16:18:01" time="17.532" tests="4">
+    <testcase classname="Public pets endpoints GET /api/pets returns an empty list initially" name="Public pets endpoints GET /api/pets returns an empty list initially" time="0.363">
+    </testcase>
+    <testcase classname="Public pets endpoints GET /api/pets returns only available pets by default" name="Public pets endpoints GET /api/pets returns only available pets by default" time="0.559">
+    </testcase>
+    <testcase classname="Public pets endpoints GET /api/pets/search can filter by species" name="Public pets endpoints GET /api/pets/search can filter by species" time="0.373">
+    </testcase>
+    <testcase classname="Public pets endpoints GET /api/pets/:id returns 404 for a missing pet" name="Public pets endpoints GET /api/pets/:id returns 404 for a missing pet" time="0.08">
+    </testcase>
+  </testsuite>
+  <testsuite name="Auth /current and /logout" errors="0" failures="0" skipped="0" timestamp="2026-04-16T16:18:19" time="7.82" tests="3">
+    <testcase classname="Auth /current and /logout rejects /api/auth/current without token" name="Auth /current and /logout rejects /api/auth/current without token" time="0.185">
+    </testcase>
+    <testcase classname="Auth /current and /logout returns current user with a valid token" name="Auth /current and /logout returns current user with a valid token" time="0.662">
+    </testcase>
+    <testcase classname="Auth /current and /logout allows logout with a valid token" name="Auth /current and /logout allows logout with a valid token" time="0.467">
+    </testcase>
+  </testsuite>
+  <testsuite name="Partner API (x-api-key)" errors="0" failures="0" skipped="0" timestamp="2026-04-16T16:18:26" time="5.773" tests="3">
+    <testcase classname="Partner API (x-api-key) rejects partner products without API key" name="Partner API (x-api-key) rejects partner products without API key" time="0.154">
+    </testcase>
+    <testcase classname="Partner API (x-api-key) allows partner products with valid API key" name="Partner API (x-api-key) allows partner products with valid API key" time="0.312">
+    </testcase>
+    <testcase classname="Partner API (x-api-key) allows partner pets with valid API key" name="Partner API (x-api-key) allows partner pets with valid API key" time="0.275">
+    </testcase>
+  </testsuite>
+  <testsuite name="Public products endpoints" errors="0" failures="0" skipped="0" timestamp="2026-04-16T16:18:32" time="6.869" tests="4">
+    <testcase classname="Public products endpoints GET /api/products returns an empty list initially" name="Public products endpoints GET /api/products returns an empty list initially" time="0.173">
+    </testcase>
+    <testcase classname="Public products endpoints GET /api/products returns seeded products" name="Public products endpoints GET /api/products returns seeded products" time="0.281">
+    </testcase>
+    <testcase classname="Public products endpoints GET /api/products/:id returns 404 for a missing product" name="Public products endpoints GET /api/products/:id returns 404 for a missing product" time="0.036">
+    </testcase>
+    <testcase classname="Public products endpoints GET /api/products/:id returns product details (with reviews array)" name="Public products endpoints GET /api/products/:id returns product details (with reviews array)" time="0.259">
+    </testcase>
+  </testsuite>
+  <testsuite name="Appointment slot blocking" errors="0" failures="0" skipped="0" timestamp="2026-04-16T16:18:39" time="8.347" tests="1">
+    <testcase classname="Appointment slot blocking prevents double-booking the same vet/date/timeSlot" name="Appointment slot blocking prevents double-booking the same vet/date/timeSlot" time="1.057">
+    </testcase>
+  </testsuite>
+  <testsuite name="GET /api/health" errors="0" failures="0" skipped="0" timestamp="2026-04-16T16:18:47" time="6.677" tests="1">
+    <testcase classname="GET /api/health returns ok" name="GET /api/health returns ok" time="0.147">
+    </testcase>
+  </testsuite>
+  <testsuite name="Auth flow" errors="0" failures="0" skipped="0" timestamp="2026-04-16T16:18:54" time="6.178" tests="2">
+    <testcase classname="Auth flow registers a customer and returns a token" name="Auth flow registers a customer and returns a token" time="0.31">
+    </testcase>
+    <testcase classname="Auth flow logs in a customer and returns a token" name="Auth flow logs in a customer and returns a token" time="0.365">
+    </testcase>
+  </testsuite>
+  <testsuite name="Public appointments endpoints" errors="0" failures="0" skipped="0" timestamp="2026-04-16T16:19:00" time="8.975" tests="5">
+    <testcase classname="Public appointments endpoints GET /api/appointments/veterinaries returns empty list initially" name="Public appointments endpoints GET /api/appointments/veterinaries returns empty list initially" time="0.286">
+    </testcase>
+    <testcase classname="Public appointments endpoints GET /api/appointments/veterinaries returns approved vets" name="Public appointments endpoints GET /api/appointments/veterinaries returns approved vets" time="0.306">
+    </testcase>
+    <testcase classname="Public appointments endpoints GET /api/appointments/available-slots rejects missing parameters" name="Public appointments endpoints GET /api/appointments/available-slots rejects missing parameters" time="0.051">
+    </testcase>
+    <testcase classname="Public appointments endpoints GET /api/appointments/available-slots returns slots for a vet" name="Public appointments endpoints GET /api/appointments/available-slots returns slots for a vet" time="0.278">
+    </testcase>
+    <testcase classname="Public appointments endpoints GET /api/appointments/available-slots returns 404 for unknown vet" name="Public appointments endpoints GET /api/appointments/available-slots returns 404 for unknown vet" time="0.045">
+    </testcase>
+  </testsuite>
+</testsuites>

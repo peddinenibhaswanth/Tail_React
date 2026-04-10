@@ -38,9 +38,7 @@ const validateRegister = [
     .notEmpty()
     .withMessage("Name is required")
     .isLength({ min: 2, max: 50 })
-    .withMessage("Name must be between 2 and 50 characters")
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage("Name can only contain letters and spaces"),
+    .withMessage("Name must be between 2 and 50 characters"),
 
   body("email")
     .trim()
@@ -67,17 +65,15 @@ const validateRegister = [
     }),
 
   body("role")
-    .optional({ checkFalsy: true })
-    .isIn(["customer", "seller", "veterinary"])
+    .optional()
+    .isIn(["customer", "seller", "veterinary", "organization"])
     .withMessage("Invalid role specified"),
 
   body("phone")
-    .optional({ checkFalsy: true })
-    .isString()
-    .withMessage("Phone must be a string")
+    .optional()
     .trim()
-    .matches(/^[+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/)
-    .withMessage("Please provide a valid phone number (numbers, spaces, +, -, (), . allowed)"),
+    .isMobilePhone("any")
+    .withMessage("Please provide a valid phone number"),
 
   handleValidationErrors,
 ];
@@ -101,59 +97,20 @@ const validateLogin = [
 // Validate profile update
 const validateProfileUpdate = [
   body("name")
-    .optional({ checkFalsy: true })
-    .isString()
-    .withMessage("Name must be a string")
+    .optional()
     .trim()
     .isLength({ min: 2, max: 50 })
-    .withMessage("Name must be between 2 and 50 characters")
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage("Name can only contain letters and spaces"),
+    .withMessage("Name must be between 2 and 50 characters"),
 
   body("phone")
-    .optional({ checkFalsy: true })
-    .isString()
-    .withMessage("Phone must be a string")
-    .trim()
-    .matches(/^[+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/)
-    .withMessage("Please provide a valid phone number"),
-
-  body("address.street")
-    .optional({ checkFalsy: true })
-    .isString()
-    .withMessage("Street address must be a string")
-    .trim()
-    .matches(/^[a-zA-Z0-9\s,\.\-\/]+$/)
-    .withMessage("Street address can only contain letters, numbers, spaces, and common punctuation (,.-/)"),
-    
-  body("address.city")
-    .optional({ checkFalsy: true })
-    .isString()
-    .withMessage("City must be a string")
-    .trim()
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage("City name can only contain letters and spaces"),
-    
-  body("address.state")
-    .optional({ checkFalsy: true })
-    .isString()
-    .withMessage("State must be a string")
-    .trim()
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage("State name can only contain letters and spaces"),
-    
-  body("address.zipCode")
-    .optional({ checkFalsy: true })
-    .isString()
-    .withMessage("ZIP code must be a string")
-    .trim()
-    .matches(/^[a-zA-Z0-9\s\-]+$/)
-    .withMessage("ZIP code can only contain letters, numbers, spaces, and hyphens"),
-  body("address.country")
-    .optional({ checkFalsy: true })
-    .isString()
-    .withMessage("Country must be a string")
+    .optional()
     .trim(),
+
+  body("address.street").optional().trim(),
+  body("address.city").optional().trim(),
+  body("address.state").optional().trim(),
+  body("address.zipCode").optional().trim(),
+  body("address.country").optional().trim(),
 
   handleValidationErrors,
 ];
@@ -194,9 +151,7 @@ const validateProduct = [
     .notEmpty()
     .withMessage("Product name is required")
     .isLength({ min: 2, max: 100 })
-    .withMessage("Product name must be between 2 and 100 characters")
-    .matches(/^[a-zA-Z0-9\s\-&().,]+$/)
-    .withMessage("Product name can only contain letters, numbers, spaces, and common symbols (-&().,)"),
+    .withMessage("Product name must be between 2 and 100 characters"),
 
   body("description")
     .trim()
@@ -223,15 +178,11 @@ const validateProduct = [
     .withMessage("Category is required"),
 
   body("brand")
-    .optional({ checkFalsy: true })
-    .isString()
-    .withMessage("Brand must be a string")
-    .trim()
-    .matches(/^[a-zA-Z0-9\s\-&]+$/)
-    .withMessage("Brand name can only contain letters, numbers, spaces, hyphens, and ampersand"),
+    .optional()
+    .trim(),
 
   body("discount")
-    .optional({ checkFalsy: true })
+    .optional()
     .isFloat({ min: 0, max: 100 })
     .withMessage("Discount must be between 0 and 100"),
 
@@ -241,41 +192,33 @@ const validateProduct = [
 // Validate product update (all fields optional)
 const validateProductUpdate = [
   body("name")
-    .optional({ checkFalsy: true })
-    .isString()
-    .withMessage("Product name must be a string")
+    .optional()
     .trim()
     .isLength({ min: 2, max: 100 })
-    .withMessage("Product name must be between 2 and 100 characters")
-    .matches(/^[a-zA-Z0-9\s\-&().,]+$/)
-    .withMessage("Product name can only contain letters, numbers, spaces, and common symbols (-&().,)"),
+    .withMessage("Product name must be between 2 and 100 characters"),
 
   body("description")
-    .optional({ checkFalsy: true })
-    .isString()
-    .withMessage("Description must be a string")
+    .optional()
     .trim()
     .isLength({ min: 10 })
     .withMessage("Description must be at least 10 characters"),
 
   body("price")
-    .optional({ checkFalsy: true })
+    .optional()
     .isFloat({ min: 0 })
     .withMessage("Price must be a positive number"),
 
   body("stock")
-    .optional({ checkFalsy: true })
+    .optional()
     .isInt({ min: 0 })
     .withMessage("Stock must be a non-negative integer"),
 
   body("category")
-    .optional({ checkFalsy: true })
-    .isString()
-    .withMessage("Category must be a string")
+    .optional()
     .trim(),
 
   body("discount")
-    .optional({ checkFalsy: true })
+    .optional()
     .isFloat({ min: 0, max: 100 })
     .withMessage("Discount must be between 0 and 100"),
 
@@ -304,54 +247,70 @@ const validatePet = [
     .notEmpty()
     .withMessage("Pet name is required")
     .isLength({ min: 2, max: 50 })
-    .withMessage("Pet name must be between 2 and 50 characters")
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage("Pet name can only contain letters and spaces"),
+    .withMessage("Pet name must be between 2 and 50 characters"),
 
   body("species")
     .trim()
     .notEmpty()
     .withMessage("Species is required")
-    .isIn(["dog", "cat", "bird", "fish", "rabbit", "hamster", "other"])
+    .isIn(["dog", "cat", "bird", "rabbit", "other"])
     .withMessage("Invalid species"),
 
   body("breed")
-    .optional({ checkFalsy: true })
-    .isString()
-    .withMessage("Breed must be a string")
-    .trim()
-    .matches(/^[a-zA-Z\s\-]+$/)
-    .withMessage("Breed can only contain letters, spaces, and hyphens"),
+    .optional()
+    .trim(),
 
+  // age is submitted as age[value]/age[unit] via FormData (or as age.value/age.unit in JSON)
   body("age")
-    .optional({ checkFalsy: true })
-    .custom((value) => {
-      // Allow both number and object format
-      if (typeof value === 'number') {
-        return value >= 0 && value <= 30;
+    .custom((_, { req }) => {
+      const ageValue = req.body?.["age[value]"] ?? req.body?.age?.value;
+      const ageUnit = req.body?.["age[unit]"] ?? req.body?.age?.unit;
+
+      if (ageValue === undefined || ageValue === null || ageValue === "") {
+        throw new Error("Age value is required");
       }
-      if (typeof value === 'object' && value !== null) {
-        return true; // Let controller handle object format
+
+      const parsedAge = Number(ageValue);
+      if (Number.isNaN(parsedAge) || parsedAge < 0) {
+        throw new Error("Age value must be a non-negative number");
       }
-      return false;
-    })
-    .withMessage("Age must be between 0 and 30 years"),
+
+      if (ageUnit !== undefined && ageUnit !== null && ageUnit !== "") {
+        const allowedUnits = ["days", "weeks", "months", "years"];
+        if (!allowedUnits.includes(ageUnit)) {
+          throw new Error("Age unit must be days, weeks, months, or years");
+        }
+      }
+
+      return true;
+    }),
 
   body("gender")
-    .optional({ checkFalsy: true })
-    .isIn(["male", "female", "unknown"])
+    .notEmpty()
+    .withMessage("Gender is required")
+    .isIn(["male", "female"])
     .withMessage("Invalid gender"),
 
-  body("description")
-    .optional({ checkFalsy: true })
-    .isString()
-    .withMessage("Description must be a string")
+  body("size")
+    .notEmpty()
+    .withMessage("Size is required")
+    .isIn(["small", "medium", "large"])
+    .withMessage("Invalid size"),
+
+  body("color")
     .trim()
+    .notEmpty()
+    .withMessage("Color is required"),
+
+  body("description")
+    .trim()
+    .notEmpty()
+    .withMessage("Description is required")
     .isLength({ max: 1000 })
     .withMessage("Description must be less than 1000 characters"),
 
   body("adoptionFee")
-    .optional({ checkFalsy: true })
+    .optional()
     .isFloat({ min: 0 })
     .withMessage("Adoption fee must be a positive number"),
 
@@ -374,13 +333,11 @@ const validateAdoptionApplication = [
     .withMessage("Please provide a detailed reason (at least 20 characters)"),
 
   body("experience")
-    .optional({ checkFalsy: true })
-    .isString()
-    .withMessage("Experience must be a string")
+    .optional()
     .trim(),
 
   body("homeType")
-    .optional({ checkFalsy: true })
+    .optional()
     .isIn(["house", "apartment", "condo", "other"])
     .withMessage("Invalid home type"),
 
@@ -408,7 +365,7 @@ const validateOrderStatus = [
 
 // Validate appointment booking
 const validateAppointment = [
-  body("veterinaryId")
+  body("veterinary")
     .notEmpty()
     .withMessage("Veterinary ID is required")
     .isMongoId()
@@ -417,16 +374,12 @@ const validateAppointment = [
   body("petName")
     .trim()
     .notEmpty()
-    .withMessage("Pet name is required")
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage("Pet name can only contain letters and spaces"),
+    .withMessage("Pet name is required"),
 
   body("petType")
     .trim()
     .notEmpty()
-    .withMessage("Pet type is required")
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage("Pet type can only contain letters and spaces"),
+    .withMessage("Pet type is required"),
 
   body("date")
     .notEmpty()
@@ -442,9 +395,7 @@ const validateAppointment = [
   body("reason")
     .trim()
     .notEmpty()
-    .withMessage("Reason for visit is required")
-    .isLength({ min: 10 })
-    .withMessage("Please provide more details about the visit reason"),
+    .withMessage("Reason for visit is required"),
 
   handleValidationErrors,
 ];
@@ -478,7 +429,7 @@ const validDays = [
 // Validate veterinary schedule/profile update
 const validateVetSchedule = [
   body("vetInfo.availableDays")
-    .optional({ checkFalsy: true })
+    .optional()
     .isArray()
     .withMessage("Available days must be an array")
     .custom((days) => {
@@ -492,7 +443,7 @@ const validateVetSchedule = [
     }),
 
   body("vetInfo.availableTimeSlots")
-    .optional({ checkFalsy: true })
+    .optional()
     .isArray()
     .withMessage("Available time slots must be an array")
     .custom((slots) => {
@@ -511,19 +462,15 @@ const validateVetSchedule = [
     }),
 
   body("vetInfo.consultationFee")
-    .optional({ checkFalsy: true })
+    .optional()
     .isFloat({ min: 0 })
     .withMessage("Consultation fee must be a positive number"),
 
   body("vetInfo.licenseNumber")
-    .optional({ checkFalsy: true })
-    .isString()
-    .withMessage("License number must be a string")
+    .optional()
     .trim()
     .isLength({ min: 3 })
-    .withMessage("License number must be at least 3 characters")
-    .matches(/^[a-zA-Z0-9\-\/]+$/)
-    .withMessage("License number can only contain letters, numbers, hyphens, and slashes"),
+    .withMessage("License number must be at least 3 characters"),
 
   handleValidationErrors,
 ];
@@ -543,14 +490,14 @@ const validateAppointmentTimeSlot = [
   // Custom validation to check if slot is within vet's available slots
   async (req, res, next) => {
     try {
-      const { veterinaryId, date, timeSlot } = req.body;
+      const { veterinary, date, timeSlot } = req.body;
       
-      if (!veterinaryId) {
+      if (!veterinary) {
         return next(); // Let other validators handle this
       }
 
       const User = require("../models/User");
-      const vet = await User.findById(veterinaryId).select("vetInfo");
+      const vet = await User.findById(veterinary).select("vetInfo");
       
       if (!vet) {
         return res.status(404).json({
@@ -646,47 +593,25 @@ const validateCheckout = [
     .notEmpty()
     .withMessage("Shipping address is required"),
 
-  body("shippingAddress.fullName")
-    .trim()
-    .notEmpty()
-    .withMessage("Full name is required")
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage("Full name can only contain letters and spaces"),
-
-  body("shippingAddress.phone")
-    .trim()
-    .notEmpty()
-    .withMessage("Phone number is required")
-    .matches(/^[+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/)
-    .withMessage("Please provide a valid phone number"),
-
   body("shippingAddress.street")
     .trim()
     .notEmpty()
-    .withMessage("Street address is required")
-    .matches(/^[a-zA-Z0-9\s,\.\-\/]+$/)
-    .withMessage("Street address can only contain letters, numbers, spaces, and common punctuation (,.-/)"),
+    .withMessage("Street address is required"),
 
   body("shippingAddress.city")
     .trim()
     .notEmpty()
-    .withMessage("City is required")
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage("City name can only contain letters and spaces"),
+    .withMessage("City is required"),
 
   body("shippingAddress.state")
     .trim()
     .notEmpty()
-    .withMessage("State is required")
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage("State name can only contain letters and spaces"),
+    .withMessage("State is required"),
 
   body("shippingAddress.zipCode")
     .trim()
     .notEmpty()
-    .withMessage("ZIP code is required")
-    .matches(/^[a-zA-Z0-9\s\-]+$/)
-    .withMessage("ZIP code can only contain letters, numbers, spaces, and hyphens"),
+    .withMessage("ZIP code is required"),
 
   body("paymentMethod")
     .notEmpty()
@@ -731,11 +656,21 @@ const validateReview = [
     .isInt({ min: 1, max: 5 })
     .withMessage("Rating must be between 1 and 5"),
 
+  body("title")
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage("Title must be less than 100 characters"),
+
   body("comment")
     .optional()
     .trim()
-    .isLength({ max: 500 })
-    .withMessage("Comment must be less than 500 characters"),
+    .isLength({ max: 1000 })
+    .withMessage("Comment must be less than 1000 characters"),
+
+  body("orderId")
+    .notEmpty()
+    .withMessage("Order ID is required"),
 
   handleValidationErrors,
 ];
@@ -758,12 +693,12 @@ const validateObjectId = (paramName) => [
 // Validate pagination query params
 const validatePagination = [
   query("page")
-    .optional({ checkFalsy: true })
+    .optional()
     .isInt({ min: 1 })
     .withMessage("Page must be a positive integer"),
 
   query("limit")
-    .optional({ checkFalsy: true })
+    .optional()
     .isInt({ min: 1, max: 100 })
     .withMessage("Limit must be between 1 and 100"),
 
