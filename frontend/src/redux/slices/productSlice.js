@@ -6,6 +6,9 @@ const initialState = {
   sellerProducts: [],
   product: null,
   categories: [],
+  reviews: [],
+  ratingBreakdown: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+  reviewEligibility: [],
   isLoading: false,
   isError: false,
   isSuccess: false,
@@ -206,6 +209,42 @@ export const addReview = createAsyncThunk(
   }
 );
 
+// Get product reviews with pagination
+export const getReviews = createAsyncThunk(
+  "products/getReviews",
+  async ({ productId, params }, thunkAPI) => {
+    try {
+      return await productService.getReviews(productId, params);
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
+// Check review eligibility
+export const checkReviewEligibility = createAsyncThunk(
+  "products/checkReviewEligibility",
+  async (_, thunkAPI) => {
+    try {
+      return await productService.checkReviewEligibility();
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
 export const productSlice = createSlice({
   name: "products",
   initialState,
@@ -374,13 +413,22 @@ export const productSlice = createSlice({
       .addCase(addReview.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.product = action.payload;
+        state.product = action.payload.data || action.payload;
         state.message = "Review added successfully!";
       })
       .addCase(addReview.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
+      })
+      // Get reviews
+      .addCase(getReviews.fulfilled, (state, action) => {
+        state.reviews = action.payload.data || [];
+        state.ratingBreakdown = action.payload.ratingBreakdown || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      })
+      // Check review eligibility
+      .addCase(checkReviewEligibility.fulfilled, (state, action) => {
+        state.reviewEligibility = action.payload.data || [];
       });
   },
 });

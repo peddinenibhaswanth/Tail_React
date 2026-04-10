@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Container,
   Table,
@@ -21,6 +21,7 @@ import { getSellerDashboard } from "../../redux/slices/dashboardSlice";
 
 const SellerOrders = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { orders, isLoading, isError, isSuccess, message } = useSelector(
     (state) => state.orders
   );
@@ -88,7 +89,13 @@ const SellerOrders = () => {
   return (
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>My Product Orders</h2>
+        <div>
+          <Button variant="outline-secondary" size="sm" onClick={() => navigate("/seller/dashboard")} className="mb-2">
+            <i className="bi bi-arrow-left me-2"></i>Back to Dashboard
+          </Button>
+          <h2 className="mb-1"><i className="bi bi-bag-check me-2"></i>My Product Orders</h2>
+          <p className="text-muted mb-0">Manage and fulfill customer orders</p>
+        </div>
         <Form.Select
           style={{ width: "200px" }}
           value={statusFilter}
@@ -141,7 +148,7 @@ const SellerOrders = () => {
                     <td>
                       <Badge
                         bg={getStatusBadge(order.status)}
-                        className="text-uppercase"
+                        className="rounded-pill text-uppercase"
                       >
                         {order.status}
                       </Badge>
@@ -178,7 +185,7 @@ const SellerOrders = () => {
             <p className="text-muted">
               When customers order your products, they will appear here.
             </p>
-            <Link to="/seller/products" className="btn btn-primary">
+            <Link to="/seller/products" className="btn btn-primary rounded-pill">
               Manage Products
             </Link>
           </Card.Body>
@@ -226,7 +233,7 @@ const SellerOrders = () => {
           <Button variant="secondary" onClick={() => setShowStatusModal(false)}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={submitStatusUpdate}>
+          <Button variant="primary" className="rounded-pill" onClick={submitStatusUpdate}>
             Update Status
           </Button>
         </Modal.Footer>

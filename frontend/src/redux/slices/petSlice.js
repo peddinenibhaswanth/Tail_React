@@ -114,7 +114,26 @@ export const deletePet = createAsyncThunk(
   "pets/deletePet",
   async (id, thunkAPI) => {
     try {
-      return await petService.deletePet(id);
+      const response = await petService.deletePet(id);
+      return { ...response, id };
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
+// Get organization's own pets
+export const getMyPets = createAsyncThunk(
+  "pets/getMyPets",
+  async (_, thunkAPI) => {
+    try {
+      return await petService.getMyPets();
     } catch (error) {
       const message =
         (error.response &&
@@ -210,7 +229,10 @@ export const petSlice = createSlice({
       .addCase(createPet.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.pets.push(action.payload);
+        const newPet = action.payload.data || action.payload;
+        if (newPet && newPet._id) {
+          state.pets.push(newPet);
+        }
         state.message = "Pet created successfully!";
       })
       .addCase(createPet.rejected, (state, action) => {
@@ -225,9 +247,10 @@ export const petSlice = createSlice({
       .addCase(updatePet.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.pet = action.payload;
+        const updatedPet = action.payload.data || action.payload;
+        state.pet = updatedPet;
         state.pets = state.pets.map((p) =>
-          p._id === action.payload._id ? action.payload : p
+          p._id === updatedPet._id ? updatedPet : p
         );
         state.message = "Pet updated successfully!";
       })
@@ -247,6 +270,20 @@ export const petSlice = createSlice({
         state.message = "Pet deleted successfully!";
       })
       .addCase(deletePet.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
+      })
+      // Get organization's own pets
+      .addCase(getMyPets.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(getMyPets.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.pets = action.payload.data || [];
+      })
+      .addCase(getMyPets.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;

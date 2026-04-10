@@ -78,7 +78,57 @@ export const addReview = async (productId, reviewData) => {
 };
 
 // Get product reviews
-export const getReviews = async (productId) => {
-  const response = await axios.get(`/api/products/${productId}/reviews`);
+export const getReviews = async (productId, params = {}) => {
+  const response = await axios.get(`/api/products/${productId}/reviews`, {
+    params,
+  });
+  return response.data;
+};
+
+// Vote review as helpful
+export const voteHelpful = async (productId, reviewId) => {
+  const response = await axios.post(
+    `/api/products/${productId}/reviews/${reviewId}/helpful`
+  );
+  return response.data;
+};
+
+// Delete a review
+export const deleteReview = async (productId, reviewId) => {
+  const response = await axios.delete(
+    `/api/products/${productId}/reviews/${reviewId}`
+  );
+  return response.data;
+};
+
+// Check review eligibility for delivered orders
+export const checkReviewEligibility = async () => {
+  const response = await axios.get("/api/products/reviews/check-eligibility");
+  return response.data;
+};
+
+// Get all reviews for seller's products
+export const getSellerReviews = async (params = {}) => {
+  const response = await axios.get("/api/products/reviews/seller-reviews", { params });
+  return response.data;
+};
+
+// Get all reviews (admin)
+export const getAllReviewsAdmin = async (params = {}) => {
+  const response = await axios.get("/api/products/reviews/admin-all", { params });
+  return response.data;
+};
+
+// Add images to existing product
+export const addProductImages = async (productId, formData) => {
+  const response = await axios.post(`/api/products/${productId}/images`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
+// Delete a specific image from product
+export const deleteProductImage = async (productId, imageIndex) => {
+  const response = await axios.delete(`/api/products/${productId}/images/${imageIndex}`);
   return response.data;
 };

@@ -12,9 +12,9 @@ const initialState = {
 // Get admin dashboard
 export const getAdminDashboard = createAsyncThunk(
   "dashboard/getAdminDashboard",
-  async (_, thunkAPI) => {
+  async (period = 30, thunkAPI) => {
     try {
-      return await dashboardService.getAdminDashboard();
+      return await dashboardService.getAdminDashboard(period);
     } catch (error) {
       const message =
         (error.response &&

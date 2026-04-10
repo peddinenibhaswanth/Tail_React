@@ -1,17 +1,35 @@
 import React, { useEffect } from "react";
-import { BrowserRouter as Router } from "react-router-dom";
+import { BrowserRouter as Router, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import AppRoutes from "./routes";
 import Navbar from "./components/common/Navbar";
 import Footer from "./components/common/Footer";
 import Alert from "./components/common/Alert";
 import ErrorBoundary from "./components/common/ErrorBoundary";
+import ReviewPromptModal from "./components/products/ReviewPromptModal";
 import { NotificationProvider } from "./context/NotificationContext";
 import { getCart } from "./redux/slices/cartSlice";
 import { getCurrentUser } from "./redux/slices/authSlice";
 import useAuth from "./hooks/useAuth";
 import "bootstrap/dist/css/bootstrap.min.css";
+import "./styles/variables.css";
 import "./styles/custom.css";
+
+// Animated wrapper that re-triggers fade on route change
+const PageTransition = () => {
+  const location = useLocation();
+
+  // Scroll to top on every route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
+  return (
+    <div className="page-transition-wrapper" key={location.pathname}>
+      <AppRoutes />
+    </div>
+  );
+};
 
 function App() {
   const dispatch = useDispatch();
@@ -40,9 +58,10 @@ function App() {
             <Navbar />
             <Alert />
             <main className="flex-grow-1" role="main">
-              <AppRoutes />
+              <PageTransition />
             </main>
             <Footer />
+            {isAuthenticated && <ReviewPromptModal />}
           </div>
         </Router>
       </NotificationProvider>

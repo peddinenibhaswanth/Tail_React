@@ -124,8 +124,10 @@ const SellerDashboard = () => {
   return (
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Seller Dashboard</h2>
-        <span className="text-muted">Welcome, {user?.name}</span>
+        <div>
+          <h2 className="fw-bold mb-1">Seller Dashboard</h2>
+          <p className="text-muted mb-0 small">Welcome back, {user?.name}</p>
+        </div>
       </div>
 
       {isError && <Alert variant="danger">{message}</Alert>}
@@ -133,47 +135,59 @@ const SellerDashboard = () => {
       {/* Stats Cards */}
       <Row className="g-4 mb-4">
         <Col md={3}>
-          <Card className="h-100 border-0 shadow-sm bg-primary text-white">
-            <Card.Body className="text-center">
-              <div className="display-4">{stats.totalProducts || 0}</div>
-              <h6>Total Products</h6>
-              <small>Products listed</small>
+          <Card className="dashboard-card dashboard-card-purple h-100">
+            <Card.Body className="text-center p-4">
+              <div className="dashboard-card-icon mx-auto">
+                <i className="bi bi-box-seam-fill"></i>
+              </div>
+              <div className="dashboard-card-value">{stats.totalProducts || 0}</div>
+              <div className="dashboard-card-label">Total Products</div>
+              <div className="dashboard-card-subtitle">Products listed</div>
             </Card.Body>
           </Card>
         </Col>
 
         <Col md={3}>
-          <Card className="h-100 border-0 shadow-sm bg-success text-white">
-            <Card.Body className="text-center">
-              <div className="display-4">
+          <Card className="dashboard-card dashboard-card-green h-100">
+            <Card.Body className="text-center p-4">
+              <div className="dashboard-card-icon mx-auto">
+                <i className="bi bi-cart-fill"></i>
+              </div>
+              <div className="dashboard-card-value">
                 {stats.totalOrders || orders?.length || 0}
               </div>
-              <h6>Total Orders</h6>
-              <small>All time orders</small>
+              <div className="dashboard-card-label">Total Orders</div>
+              <div className="dashboard-card-subtitle">All time orders</div>
             </Card.Body>
           </Card>
         </Col>
 
         <Col md={3}>
-          <Card className="h-100 border-0 shadow-sm bg-info text-white">
-            <Card.Body className="text-center">
-              <div className="display-4">
+          <Card className="dashboard-card dashboard-card-teal h-100">
+            <Card.Body className="text-center p-4">
+              <div className="dashboard-card-icon mx-auto">
+                <i className="bi bi-wallet2"></i>
+              </div>
+              <div className="dashboard-card-value">
                 ₹{(stats.netEarnings || 0).toFixed(0)}
               </div>
-              <h6>Net Earnings</h6>
-              <small>After 10% platform fee</small>
+              <div className="dashboard-card-label">Net Earnings</div>
+              <div className="dashboard-card-subtitle">After 10% platform fee</div>
             </Card.Body>
           </Card>
         </Col>
 
         <Col md={3}>
-          <Card className="h-100 border-0 shadow-sm bg-warning text-dark">
-            <Card.Body className="text-center">
-              <div className="display-4">
+          <Card className="dashboard-card dashboard-card-orange h-100">
+            <Card.Body className="text-center p-4">
+              <div className="dashboard-card-icon mx-auto">
+                <i className="bi bi-clock-history"></i>
+              </div>
+              <div className="dashboard-card-value">
                 {stats.pendingOrders || pendingOrders.length}
               </div>
-              <h6>Pending Orders</h6>
-              <small>Needs attention</small>
+              <div className="dashboard-card-label">Pending Orders</div>
+              <div className="dashboard-card-subtitle">Needs attention</div>
             </Card.Body>
           </Card>
         </Col>
@@ -182,35 +196,35 @@ const SellerDashboard = () => {
       {/* Earnings Breakdown - Professional Marketplace Style */}
       <Row className="g-4 mb-4">
         <Col md={12}>
-          <Card className="border-0 shadow-sm">
-            <Card.Header className="bg-dark text-white">
-              <h5 className="mb-0"><i className="bi bi-wallet2 me-2"></i>Earnings Breakdown</h5>
-            </Card.Header>
-            <Card.Body>
-              <Row>
-                <Col md={3} className="text-center border-end">
-                  <div className="display-6 text-primary">₹{(stats.grossSales || 0).toFixed(0)}</div>
-                  <small className="text-muted d-block">Gross Sales</small>
-                  <small className="text-muted">(Total Product Sales)</small>
+          <Card className="dashboard-analytics-card">
+            <div className="dashboard-analytics-header">
+              <h5 className="mb-0 fw-bold"><i className="bi bi-wallet2 me-2"></i>Earnings Breakdown</h5>
+            </div>
+            <Card.Body className="p-0">
+              <Row className="g-0">
+                <Col md={3} className="dashboard-analytics-metric">
+                  <div className="dashboard-analytics-metric-value" style={{ color: '#1565C0' }}>₹{(stats.grossSales || 0).toFixed(0)}</div>
+                  <div className="dashboard-analytics-metric-label">Gross Sales</div>
+                  <div className="dashboard-analytics-metric-sub">Total Product Sales</div>
                 </Col>
-                <Col md={3} className="text-center border-end">
-                  <div className="display-6 text-danger">- ₹{(stats.commissionDeducted || 0).toFixed(0)}</div>
-                  <small className="text-muted d-block">Platform Commission</small>
-                  <small className="text-muted">(10% Service Fee)</small>
+                <Col md={3} className="dashboard-analytics-metric">
+                  <div className="dashboard-analytics-metric-value" style={{ color: '#C2185B' }}>- ₹{(stats.commissionDeducted || 0).toFixed(0)}</div>
+                  <div className="dashboard-analytics-metric-label">Platform Commission</div>
+                  <div className="dashboard-analytics-metric-sub">10% Service Fee</div>
                 </Col>
-                <Col md={3} className="text-center border-end">
-                  <div className="display-6 text-success">₹{(stats.netEarnings || 0).toFixed(0)}</div>
-                  <small className="text-muted d-block">Net Earnings</small>
-                  <small className="text-muted">(Payable to You)</small>
+                <Col md={3} className="dashboard-analytics-metric">
+                  <div className="dashboard-analytics-metric-value" style={{ color: '#2E7D32' }}>₹{(stats.netEarnings || 0).toFixed(0)}</div>
+                  <div className="dashboard-analytics-metric-label">Net Earnings</div>
+                  <div className="dashboard-analytics-metric-sub">Payable to You</div>
                 </Col>
-                <Col md={3} className="text-center">
-                  <div className="display-6 text-warning">₹{(stats.pendingRevenue || 0).toFixed(0)}</div>
-                  <small className="text-muted d-block">Pending Revenue</small>
-                  <small className="text-muted">(Awaiting Delivery)</small>
+                <Col md={3} className="dashboard-analytics-metric">
+                  <div className="dashboard-analytics-metric-value" style={{ color: '#E65100' }}>₹{(stats.pendingRevenue || 0).toFixed(0)}</div>
+                  <div className="dashboard-analytics-metric-label">Pending Revenue</div>
+                  <div className="dashboard-analytics-metric-sub">Awaiting Delivery</div>
                 </Col>
               </Row>
             </Card.Body>
-            <Card.Footer className="bg-light">
+            <Card.Footer className="bg-light border-0">
               <small className="text-muted">
                 <i className="bi bi-info-circle me-1"></i>
                 Net earnings are calculated after deducting 10% platform commission. Tax (18% GST) is collected separately from customers.
@@ -229,13 +243,13 @@ const SellerDashboard = () => {
                 <i className="bi bi-lightning me-2"></i>Quick Actions
               </h5>
               <div className="d-grid gap-2">
-                <Link to="/seller/products" className="btn btn-primary">
+                <Link to="/seller/products" className="btn btn-primary rounded-pill">
                   <i className="bi bi-box me-2"></i>Manage My Products
                 </Link>
-                <Link to="/seller/products/add" className="btn btn-success">
+                <Link to="/seller/products/add" className="btn btn-success rounded-pill">
                   <i className="bi bi-plus-circle me-2"></i>Add New Product
                 </Link>
-                <Link to="/seller/orders" className="btn btn-outline-primary">
+                <Link to="/seller/orders" className="btn btn-outline-primary rounded-pill">
                   <i className="bi bi-bag me-2"></i>View All Orders
                 </Link>
               </div>
@@ -251,7 +265,7 @@ const SellerDashboard = () => {
               </h5>
               <Row>
                 <Col xs={6} className="mb-3">
-                  <div className="border rounded p-3 text-center">
+                  <div className="border-0 shadow-sm rounded p-3 text-center">
                     <div className="h4 mb-0 text-primary">
                       {stats.activeProducts || 0}
                     </div>
@@ -259,7 +273,7 @@ const SellerDashboard = () => {
                   </div>
                 </Col>
                 <Col xs={6} className="mb-3">
-                  <div className="border rounded p-3 text-center">
+                  <div className="border-0 shadow-sm rounded p-3 text-center">
                     <div className="h4 mb-0 text-warning">
                       {stats.lowStockProducts || 0}
                     </div>
@@ -267,7 +281,7 @@ const SellerDashboard = () => {
                   </div>
                 </Col>
                 <Col xs={6}>
-                  <div className="border rounded p-3 text-center">
+                  <div className="border-0 shadow-sm rounded p-3 text-center">
                     <div className="h4 mb-0 text-success">
                       {stats.deliveredOrders || 0}
                     </div>
@@ -275,7 +289,7 @@ const SellerDashboard = () => {
                   </div>
                 </Col>
                 <Col xs={6}>
-                  <div className="border rounded p-3 text-center">
+                  <div className="border-0 shadow-sm rounded p-3 text-center">
                     <div className="h4 mb-0 text-info">
                       {processingOrders.length}
                     </div>

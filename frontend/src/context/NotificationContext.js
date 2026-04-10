@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
-import { Toast, ToastContainer } from "react-bootstrap";
 
 // Create the Notification Context
 const NotificationContext = createContext(null);
@@ -84,22 +83,6 @@ export const NotificationProvider = ({ children }) => {
     setNotifications([]);
   }, []);
 
-  // Get background variant for toast
-  const getVariant = (type) => {
-    switch (type) {
-      case "success":
-        return "success";
-      case "error":
-        return "danger";
-      case "warning":
-        return "warning";
-      case "info":
-        return "info";
-      default:
-        return "secondary";
-    }
-  };
-
   // Get icon for toast type
   const getIcon = (type) => {
     switch (type) {
@@ -131,39 +114,31 @@ export const NotificationProvider = ({ children }) => {
     <NotificationContext.Provider value={value}>
       {children}
 
-      {/* Toast Container - Fixed position at top-right */}
-      <ToastContainer
-        position="top-end"
-        className="p-3"
-        style={{ zIndex: 9999, position: "fixed", top: "70px" }}
-      >
+      {/* Toast Container - Custom animated notifications */}
+      <div className="custom-toast-container">
         {notifications.map((notification) => (
-          <Toast
+          <div
             key={notification.id}
-            onClose={() => removeNotification(notification.id)}
-            bg={getVariant(notification.type)}
-            className="mb-2"
-            autohide={notification.duration > 0}
-            delay={notification.duration}
+            className={`toast-notification toast-${notification.type === 'error' ? 'error' : notification.type}`}
           >
-            <Toast.Header>
-              <span className="me-2">{getIcon(notification.type)}</span>
-              <strong className="me-auto">
-                {notification.type.charAt(0).toUpperCase() +
-                  notification.type.slice(1)}
-              </strong>
-              <small>just now</small>
-            </Toast.Header>
-            <Toast.Body
-              className={
-                notification.type === "warning" ? "text-dark" : "text-white"
-              }
-            >
-              {notification.message}
-            </Toast.Body>
-          </Toast>
+            <div className="d-flex align-items-start gap-2">
+              <span className="fs-5 lh-1">{getIcon(notification.type)}</span>
+              <div className="flex-grow-1">
+                <div className="fw-semibold small mb-1" style={{ textTransform: 'capitalize' }}>
+                  {notification.type === 'error' ? 'Error' : notification.type}
+                </div>
+                <div className="small">{notification.message}</div>
+              </div>
+              <button
+                className="btn-close btn-close-white ms-2"
+                style={{ fontSize: '0.6rem', opacity: 0.7 }}
+                onClick={() => removeNotification(notification.id)}
+                aria-label="Close"
+              />
+            </div>
+          </div>
         ))}
-      </ToastContainer>
+      </div>
     </NotificationContext.Provider>
   );
 };

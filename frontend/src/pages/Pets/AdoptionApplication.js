@@ -141,9 +141,11 @@ const AdoptionApplication = () => {
     <Container className="py-4">
       <Row className="justify-content-center">
         <Col lg={8}>
-          <Card className="shadow-sm">
+          <Card className="border-0 shadow-sm">
             <Card.Body className="p-4">
-              <h3 className="fw-bold mb-1">Adoption Application</h3>
+              <h3 className="fw-bold mb-1">
+                <i className="bi bi-file-earmark-text me-2 text-primary"></i>Adoption Application
+              </h3>
               <p className="text-muted mb-4">
                 Applying to adopt: <strong>{currentPet.name}</strong> (
                 {currentPet.breed})
@@ -286,11 +288,12 @@ const AdoptionApplication = () => {
                 </Form.Group>
 
                 <div className="d-flex gap-2">
-                  <Button variant="primary" type="submit" disabled={submitting}>
+                  <Button variant="primary" type="submit" disabled={submitting} className="rounded-pill px-4">
                     {submitting ? "Submitting..." : "Submit Application"}
                   </Button>
                   <Button
                     variant="outline-secondary"
+                    className="rounded-pill px-4"
                     onClick={() => navigate(`/pets/${id}`)}
                     disabled={submitting}
                   >

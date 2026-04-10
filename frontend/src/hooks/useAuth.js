@@ -8,6 +8,7 @@ const useAuth = () => {
   const isCoAdmin = user?.role === "co-admin";
   const isSeller = user?.role === "seller";
   const isVeterinary = user?.role === "veterinary";
+  const isOrganization = user?.role === "organization";
   const isStaff = isAdmin || isCoAdmin;
 
   return {
@@ -17,6 +18,7 @@ const useAuth = () => {
     isCoAdmin,
     isSeller,
     isVeterinary,
+    isOrganization,
     isStaff,
     isLoading,
     isError,

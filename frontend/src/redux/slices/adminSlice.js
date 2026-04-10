@@ -397,7 +397,6 @@ export const adminSlice = createSlice({
       })
       .addCase(getAllUsers.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.isSuccess = true;
         state.users =
           action.payload.data?.users ||
           action.payload.users ||

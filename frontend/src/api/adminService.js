@@ -16,12 +16,6 @@ export const getUserById = async (id) => {
   return response.data;
 };
 
-// Get user statistics (orders, appointments, applications)
-export const getUserStats = async (id) => {
-  const response = await axios.get(`/api/admin/users/${id}/stats`);
-  return response.data;
-};
-
 // Update user
 export const updateUser = async (id, userData) => {
   const response = await axios.put(`/api/admin/users/${id}`, userData);
@@ -55,6 +49,14 @@ export const updateUserRole = async (id, role) => {
 // Delete user
 export const deleteUser = async (id) => {
   const response = await axios.delete(`/api/admin/users/${id}`);
+  return response.data;
+};
+
+// Get detailed user stats (seller/org/vet)
+export const getUserDetails = async (id, period = 30) => {
+  const response = await axios.get(`/api/admin/users/${id}/details`, {
+    params: { period },
+  });
   return response.data;
 };
 

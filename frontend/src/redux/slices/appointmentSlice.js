@@ -48,6 +48,24 @@ export const getUserAppointments = createAsyncThunk(
   }
 );
 
+// Get all appointments (admin/co-admin)
+export const getAllAppointments = createAsyncThunk(
+  "appointments/getAllAppointments",
+  async (params = {}, thunkAPI) => {
+    try {
+      return await appointmentService.getAllAppointments(params);
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
 // Get vet appointments (for veterinary role)
 export const getVetAppointments = createAsyncThunk(
   "appointments/getVetAppointments",
@@ -125,12 +143,12 @@ export const cancelAppointment = createAsyncThunk(
   }
 );
 
-// Get veterinaries list
+// Get veterinaries list (with optional location params)
 export const getVeterinaries = createAsyncThunk(
   "appointments/getVeterinaries",
-  async (_, thunkAPI) => {
+  async (params = {}, thunkAPI) => {
     try {
-      return await appointmentService.getVeterinaries();
+      return await appointmentService.getVeterinaries(params);
     } catch (error) {
       const message =
         (error.response &&
@@ -202,6 +220,20 @@ export const appointmentSlice = createSlice({
         state.appointments = action.payload.data || action.payload;
       })
       .addCase(getUserAppointments.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
+      })
+      // Get all appointments (admin)
+      .addCase(getAllAppointments.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(getAllAppointments.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.appointments = action.payload.data || action.payload;
+      })
+      .addCase(getAllAppointments.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;

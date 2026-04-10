@@ -137,6 +137,24 @@ export const cancelOrder = createAsyncThunk(
   }
 );
 
+// Restore stock for a cancelled order (admin)
+export const restoreOrderStock = createAsyncThunk(
+  "orders/restoreStock",
+  async (id, thunkAPI) => {
+    try {
+      return await orderService.restoreOrderStock(id);
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
 // Get order stats
 export const getOrderStats = createAsyncThunk(
   "orders/getStats",
@@ -291,6 +309,20 @@ export const orderSlice = createSlice({
         state.stats = action.payload.data || action.payload;
       })
       .addCase(getOrderStats.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
+      })
+      // Restore stock for cancelled order
+      .addCase(restoreOrderStock.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(restoreOrderStock.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.message = action.payload.message || "Stock restored successfully!";
+      })
+      .addCase(restoreOrderStock.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
