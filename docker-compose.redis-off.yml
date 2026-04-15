@@ -1,0 +1,4 @@
+services:
+  backend:
+    environment:
+      REDIS_ENABLED: "false"
