@@ -23,9 +23,9 @@ Project_with_React/
 
 - **PEDDINENI BHASWANTH**: Database schemas, dashboard for all users, authentication files
 - **AVULA LAKSHMI NARASIMHA REDDY**: Pets, adoption pages and admin side acceptance
-- **SOMAROUTHU NAGA SAI PRAVEEN**: Products page, Seller features and reverse feedback control
-- **SOMESWARKUMAR BALAM**: Veterinary pages, appointments, Doctor side acceptance
-- **RAYAPU NISHANTH**: Login, Registration, Home, About pages and relevant CSS
+- **SOMAROUTHU NAGA SAI PRAVEEN**: Products page, Seller features and reverse feedback control, review and rating system
+- **SOMESWARKUMAR BALAM**: Veterinary pages, appointments, Doctor side acceptance, location feature using OSRM
+- **RAYAPU NISHANTH**: Login, Registration, Home, About pages, notification feature, middlewares and relevant CSS
 
 ## Prerequisites
 
