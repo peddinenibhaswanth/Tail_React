@@ -1,0 +1,690 @@
+\documentclass[12pt,a4paper]{article}
+
+% ── Packages ──
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{tcolorbox}
+
+\geometry{margin=1in}
+\hypersetup{colorlinks=true, linkcolor=blue!60!black, urlcolor=blue!50!black}
+
+% ── Styling ──
+\definecolor{narration}{RGB}{20,60,120}
+\definecolor{screen}{RGB}{100,40,100}
+\definecolor{timing}{RGB}{0,120,60}
+\definecolor{transition}{RGB}{180,80,0}
+\definecolor{critical}{RGB}{200,30,30}
+
+\newcommand{\say}[1]{\textbf{\textcolor{narration}{[SAY]:}} \textbf{``#1''}}
+\newcommand{\show}[1]{\textbf{\textcolor{screen}{[SHOW]:}} \textit{#1}}
+\newcommand{\timing}[1]{\textbf{\textcolor{timing}{[TIME]:}} #1}
+\newcommand{\trans}[1]{\textbf{\textcolor{transition}{[TRANSITION]:}} #1}
+\newcommand{\critical}{\textcolor{critical}{\textbf{[CRITICAL --- Do Not Skip]}}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Tail Waggers --- Video Demo Script}
+\fancyhead[R]{\small \thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ── Title ──
+\title{
+  \vspace{-1cm}
+  {\LARGE\bfseries Tail Waggers}\\[0.3cm]
+  {\Large Video Demonstration Script}\\[0.2cm]
+  {\large Pet Adoption \& Care Platform}\\[0.4cm]
+  {\normalsize Full-Stack MERN Application}
+}
+\author{Project Demonstration Guide}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1cm}
+\begin{tcolorbox}[colback=blue!5, colframe=blue!40!black, title=\textbf{Script Overview}]
+\begin{itemize}[nosep]
+  \item \textbf{Total Duration:} 18--20 minutes (strictly under 20 minutes)
+  \item \textbf{Target Audience:} Evaluators, faculty, project reviewers
+  \item \textbf{Format:} Screen recording with voice-over narration
+  \item \textbf{Preparation:} Seed database with sample data before recording
+\end{itemize}
+\end{tcolorbox}
+
+\newpage
+\tableofcontents
+\newpage
+
+%═══════════════════════════════════════════════════════════════
+\section{Timing Summary}
+%═══════════════════════════════════════════════════════════════
+
+\begin{tcolorbox}[colback=green!3, colframe=green!40!black, title=\textbf{Section Timing Breakdown}]
+\begin{longtable}{@{} >{\raggedright\arraybackslash}p{7.5cm} r l @{}}
+  \toprule
+  \textbf{Section} & \textbf{Duration} & \textbf{Priority} \\
+  \midrule
+  1. Introduction \& Problem Statement     & 1:00  & \critical \\
+  2. User Roles Overview                    & 1:30  & \critical \\
+  3. Homepage \& Navigation                 & 1:00  & \critical \\
+  4. User Authentication \& Registration    & 1:30  & \critical \\
+  5. Pet Adoption System                    & 2:30  & \critical \\
+  6. Veterinary Appointment Booking         & 3:00  & \critical \\
+  7. E-Commerce Shop \& Cart                & 2:30  & \critical \\
+  8. Customer Dashboard                     & 1:00  & Recommended \\
+  9. Veterinary Dashboard                   & 1:00  & Recommended \\
+  10. Organization Dashboard                & 1:00  & Recommended \\
+  11. Admin \& Co-Admin Dashboard           & 1:30  & \critical \\
+  12. Notifications System                  & 0:30  & Optional \\
+  13. Technology Stack \& Architecture      & 1:30  & \critical \\
+  14. Conclusion \& Future Scope            & 0:30  & \critical \\
+  \midrule
+  \textbf{TOTAL}                            & \textbf{20:00} & \\
+  \bottomrule
+\end{longtable}
+\end{tcolorbox}
+
+\begin{tcolorbox}[colback=yellow!5, colframe=orange!60!black, title=\textbf{Time-Saving Tips (if under 17 min target)}]
+\begin{itemize}[nosep]
+  \item Combine Sections 8, 9 \& 10 (Customer + Vet + Organization Dashboard) into a single 1:30 overview.
+  \item Shorten Section 12 (Notifications) by showing only the bell icon and one notification.
+  \item In Section 7, skip the order-tracking demo and just mention it verbally.
+\end{itemize}
+\end{tcolorbox}
+
+\newpage
+
+%═══════════════════════════════════════════════════════════════
+\section{Section 1 --- Introduction \& Problem Statement}
+\label{sec:intro}
+%═══════════════════════════════════════════════════════════════
+
+\timing{1:00} \hfill \critical
+
+\subsection{Opening (0:00 -- 0:20)}
+
+\show{Browser open on the Tail Waggers homepage hero section. The headline ``Find Your Perfect Furry Friend Today'' is visible with the paw-print animations and trust indicators.}
+
+\say{Hello and welcome! My name is [Your Name], and today I'll be presenting Tail Waggers --- a full-stack web application that I developed as my project. Tail Waggers is a comprehensive pet adoption and care platform that brings together pet adoption, veterinary services, and pet product e-commerce --- all in one unified application.}
+
+\subsection{Problem Statement (0:20 -- 0:40)}
+
+\say{The problem I aimed to solve is straightforward. Today, if you want to adopt a pet, you visit one website. If you need a veterinarian, you search on another. And if you want pet supplies, you go to yet another platform. There is no single ecosystem that connects all three. Tail Waggers solves this by providing a unified platform where pet lovers can adopt pets, book veterinary appointments based on their location, and shop for pet products --- all under one roof.}
+
+\show{Slowly scroll down the homepage to reveal the ``How It Works'' section showing the three steps: Browse \& Discover, Apply \& Connect, Welcome Home.}
+
+\subsection{Solution Overview (0:40 -- 1:00)}
+
+\say{Tail Waggers is built on the MERN stack --- MongoDB, Express, React, and Node.js. It features six distinct user roles, a location-based veterinary search using OpenStreetMap, a complete e-commerce module with cart and checkout, and a robust admin panel with analytics. Let me walk you through every feature in detail.}
+
+\trans{Scroll back to top of homepage. Pause briefly.}
+
+\newpage
+
+%═══════════════════════════════════════════════════════════════
+\section{Section 2 --- User Roles Overview}
+\label{sec:roles}
+%═══════════════════════════════════════════════════════════════
+
+\timing{1:30} \hfill \critical
+
+\subsection{Introducing the Roles (1:00 -- 2:00)}
+
+\show{Show the Registration page. Click on the ``Role'' dropdown to reveal the four selectable roles: Customer, Seller, Veterinary, Organization.}
+
+\say{Tail Waggers supports six user roles, four of which are self-registerable. Let me explain each one:}
+
+\say{First, the \textbf{Customer}. This is the primary end-user. Customers can browse and adopt pets, book veterinary appointments, shop for pet products, manage their profile, and track all their orders and applications from a personalized dashboard.}
+
+\say{Second, the \textbf{Seller}. Sellers are pet product vendors. They can list products, manage inventory, fulfill orders, and view their earnings after the platform's ten percent commission. Sellers require admin approval before they can start selling.}
+
+\say{Third, the \textbf{Veterinary}. Veterinarians register with their clinic details, license number, specializations, consultation modes, and available time slots. They also need admin approval. Once approved, they appear in the location-based vet search and can manage appointments from their dashboard.}
+
+\say{Fourth, the \textbf{Organization}. These are animal shelters and rescue organizations that list pets for adoption and manage adoption applications.}
+
+\show{Navigate briefly to the Admin Dashboard to show the user management area.}
+
+\say{And finally, we have the \textbf{Admin} and \textbf{Co-Admin} roles. The Admin has full platform control --- approving users, managing all data, and viewing revenue analytics. The Co-Admin has similar management capabilities but without access to revenue reports. These roles are created internally, not through public registration.}
+
+\trans{Navigate back to homepage. Click ``Login'' in the navbar.}
+
+\newpage
+
+%═══════════════════════════════════════════════════════════════
+\section{Section 3 --- Homepage \& Navigation}
+\label{sec:homepage}
+%═══════════════════════════════════════════════════════════════
+
+\timing{1:00} \hfill \critical
+
+\subsection{Homepage Walkthrough (2:00 -- 2:40)}
+
+\show{Navigate to the homepage (\texttt{/}). Start at the very top.}
+
+\say{Let's start with the homepage. At the top, we have a responsive navigation bar built with React Bootstrap. It dynamically adapts based on the user's role --- showing different menu items for customers, sellers, vets, and admins. You can see the links for Adopt a Pet, Shop, Book Appointment, About, and Contact.}
+
+\show{Point to the navbar. Hover over the user dropdown briefly, then scroll down through the homepage.}
+
+\say{The hero section greets visitors with the platform's tagline and call-to-action buttons. Below that, we trust indicators showing the platform's impact --- over 500 pets adopted, a 4.9-star rating, and more than 1000 happy families.}
+
+\show{Scroll to the ``How It Works'' section.}
+
+\say{The How It Works section explains the three-step adoption process. And below that, we have our three core service cards --- Pet Adoption, Veterinary Care, and Pet Supplies --- each linking directly to their respective feature.}
+
+\subsection{Responsive Design (2:40 -- 3:00)}
+
+\show{Open browser DevTools (F12), toggle the device toolbar, and switch to a mobile viewport (e.g., iPhone 12). Show the homepage adapting. Then show the hamburger menu.}
+
+\say{The entire application is fully responsive. Here you can see the homepage adapting to a mobile viewport. The navigation collapses into a hamburger menu, and all sections stack vertically for an optimal mobile experience. This is achieved using React Bootstrap's grid system and responsive utility classes.}
+
+\trans{Close DevTools. Return to desktop view. Click ``Register'' in the navbar.}
+
+\newpage
+
+%═══════════════════════════════════════════════════════════════
+\section{Section 4 --- User Authentication \& Registration}
+\label{sec:auth}
+%═══════════════════════════════════════════════════════════════
+
+\timing{1:30} \hfill \critical
+
+\subsection{Registration Flow (3:00 -- 3:45)}
+
+\show{Registration page (\texttt{/register}). Select ``Customer'' role first.}
+
+\say{Now let's look at the authentication system. Starting with registration --- users can sign up by selecting their role and filling in the required details. For a customer, the form asks for name, email, phone number, and password with confirmation.}
+
+\show{Change the role dropdown to ``Veterinary'' to reveal the expanded form.}
+
+\say{Watch what happens when I select the Veterinary role. The form dynamically expands to include clinic-specific fields --- clinic name, a structured address with city, state, and PIN code, license number, specializations, years of experience, and available consultation modes such as in-clinic, home visit, and video consultation. Each mode has its own fee field.}
+
+\show{Scroll down on the vet registration form to show the availability section --- day checkboxes and time slot selectors.}
+
+\say{Further down, veterinarians set their available days and time slots. They also pick their clinic location on an interactive map powered by Leaflet and OpenStreetMap, which captures the exact geocoordinates. This location data is stored as a GeoJSON point in MongoDB with a 2dsphere index, enabling the location-based search that we'll see shortly.}
+
+\show{Show the map picker briefly. Then scroll back up.}
+
+\say{All form fields have client-side validation using custom validators. On the backend, passwords are hashed with bcrypt before being stored in MongoDB.}
+
+\subsection{Login Flow (3:45 -- 4:15)}
+
+\show{Navigate to Login page (\texttt{/login}).}
+
+\say{The login page is clean and straightforward. Users enter their email and password. On successful authentication, the backend generates a JSON Web Token --- a JWT --- which is stored on the client side and sent with every subsequent API request via an Axios interceptor. This token is validated by our authentication middleware on every protected route.}
+
+\show{Log in with a pre-created customer account. Show the redirect to the Customer Dashboard.}
+
+\say{Upon login, users are automatically redirected to their role-specific dashboard. Customers land here on their dashboard, while sellers, vets, and admins each have their own dedicated dashboards. This routing is handled by a DashboardRedirect component that reads the user's role and navigates accordingly.}
+
+\subsection{Profile Management (4:15 -- 4:30)}
+
+\show{Click on the user dropdown in navbar, select ``Profile''. Show the profile page with two tabs.}
+
+\say{Every user has a profile page with two tabs --- Profile Information where they can update their name, email, and phone, and a Change Password tab for security. The profile also displays the user's role badge and membership date.}
+
+\trans{Navigate back to the homepage. Click ``Adopt a Pet'' in the navbar.}
+
+\newpage
+
+%═══════════════════════════════════════════════════════════════
+\section{Section 5 --- Pet Adoption System}
+\label{sec:pets}
+%═══════════════════════════════════════════════════════════════
+
+\timing{2:30} \hfill \critical
+
+\subsection{Browse \& Filter Pets (4:30 -- 5:15)}
+
+\show{Pet listing page (\texttt{/pets}). Ensure several pets with images are visible.}
+
+\say{Now let's explore the pet adoption system. This is the pet listing page where users can browse all available pets. Each pet card shows the pet's image, name, species, breed, age, gender, and adoption fee. The cards use a hover effect with a scroll-reveal animation for a polished user experience.}
+
+\show{Interact with the filter controls --- select ``Dog'' from species, then ``Small'' from size, then type a search term. Show the results updating dynamically.}
+
+\say{Users can refine their search using multiple filters --- species, size, gender, and adoption status --- along with a text search. These filters are debounced by 300 milliseconds to prevent excessive API calls. On the backend, the query is built dynamically using MongoDB's flexible query operators, and the pet collection has a text index on the name, description, and breed fields for fast full-text search.}
+
+\show{Reset all filters to show all pets again.}
+
+\subsection{Pet Detail Page (5:15 -- 5:45)}
+
+\show{Click on any pet card to navigate to the pet detail page (\texttt{/pets/:id}).}
+
+\say{Clicking on a pet card opens its detailed profile. Here we can see the pet's complete information --- a photo, the name, species, breed, age, gender, size, color, and a description. The page also shows health information such as vaccination status, neutering, and microchipping. Behavioral traits like energy level, training level, and socialness with children, dogs, and cats are also displayed. At the bottom, there's a section for similar available pets.}
+
+\show{Point to the health info badges and the ``Good With'' section. Scroll to show similar pets.}
+
+\say{All this structured data comes from our Pet model in MongoDB, which has nested objects for health information, behavior traits, and compatibility details.}
+
+\subsection{Adoption Application (5:45 -- 6:30)}
+
+\show{Click the ``Apply to Adopt'' button on the pet detail page. Show the adoption application form (\texttt{/pets/:id/apply}).}
+
+\say{When a customer decides to adopt, they click Apply to Adopt and are taken to the adoption application form. The form collects important information --- housing type, whether they have a yard, employment status, existing pets, prior pet experience, their reason for wanting to adopt, and optional references.}
+
+\show{Fill out the form fields briefly with sample data. Do NOT submit --- just show the form.}
+
+\say{Once submitted, the application is stored in MongoDB and linked to both the pet and the customer. The organization or admin can then review the application. The customer can track all their applications from the ``My Applications'' page, which shows the status of each application --- whether it's pending, approved, or rejected.}
+
+\show{Navigate to ``My Applications'' from the navbar dropdown to show the applications list with status badges.}
+
+\subsection{Admin Pet Approval (6:30 -- 7:00)}
+
+\show{Log out of customer account. Log in as Admin. Navigate to Admin Dashboard $\rightarrow$ Pet Management (\texttt{/admin/pets}).}
+
+\say{From the admin side, administrators and organizations can manage pet listings. The admin pet management panel shows all pets across the platform with their status. Admins can add new pets, edit existing listings, and manage adoptions. They can also handle adoption applications through the Application Management section, where they review and approve or reject applications submitted by customers.}
+
+\show{Briefly show the pet management table, then navigate to Application Management to show the applications list.}
+
+\trans{Log out of admin. Log in as customer again. Navigate to ``Book Appointment'' in navbar.}
+
+\newpage
+
+%═══════════════════════════════════════════════════════════════
+\section{Section 6 --- Veterinary Appointment Booking}
+\label{sec:appointments}
+%═══════════════════════════════════════════════════════════════
+
+\timing{3:00} \hfill \critical
+
+\subsection{Location-Based Vet Search (7:00 -- 7:50)}
+
+\show{Book Appointment page (\texttt{/appointments/book}). The LocationCapture component prompts for location access.}
+
+\say{Now let's look at one of the most technically interesting features --- the veterinary appointment booking system with location-based search. When a customer navigates to Book Appointment, the platform first requests their location using the browser's Geolocation API.}
+
+\show{Allow location access. Show the map loading with vet markers.}
+
+\say{Once the location is captured, the system queries our backend, which uses MongoDB's 2dsphere geospatial index to find veterinarians within the specified radius. The distance between the user and each vet clinic is calculated using the OSRM --- Open Source Routing Machine --- API, which provides real driving distances, not just straight-line calculations. The results are displayed both as a list and on an interactive Leaflet map with color-coded markers.}
+
+\show{Show the map with vet markers. Point out different marker colors.}
+
+\subsection{Filters \& Vet Selection (7:50 -- 8:30)}
+
+\show{Open the filter panel (Offcanvas). Adjust the radius slider, select a specialization, change the consultation mode.}
+
+\say{Users can filter veterinarians by search radius in kilometers, specialization, preferred consultation mode --- in-clinic, home visit, or video consultation --- maximum fee, and sort results by distance. These filters update the results in real time.}
+
+\show{Close filters. Click on a vet card or map marker to open the booking modal.}
+
+\say{Selecting a veterinarian opens a booking modal that displays the vet's full profile --- clinic name, specializations, distance from the user, available consultation modes with their respective fees, and the clinic's address. The consultation fees vary by mode --- for example, an in-clinic visit might cost 500 rupees while a home visit costs 800 rupees.}
+
+\subsection{Booking an Appointment (8:30 -- 9:20)}
+
+\show{In the booking modal, fill in: Pet Name, Pet Type (Dog), Pet Age, select Reason (General Checkup), pick a Date, and show available time slots loading.}
+
+\say{To book, the customer provides their pet's details --- name, type, and age --- selects a reason for the visit from options like General Checkup, Vaccination, Grooming, or Emergency Care, and then picks a date. The system dynamically fetches available time slots for that specific vet on that specific date, ensuring there are no scheduling conflicts.}
+
+\show{Select a time slot. Select an available consultation mode. Click ``Book Appointment''.}
+
+\say{After choosing a time slot and consultation mode, the customer confirms the booking. The appointment is created with a ``pending'' status and the customer is redirected to their appointments list.}
+
+\subsection{Appointment Management (9:20 -- 10:00)}
+
+\show{Navigate to ``My Appointments'' from navbar dropdown. Show the appointments table.}
+
+\say{Customers can view all their appointments on the My Appointments page, which shows the date, time, veterinarian, pet details, appointment type, and current status. Each appointment can be viewed in detail or cancelled if it's still in pending or confirmed status.}
+
+\show{Click on an appointment to open the Appointment Detail page (\texttt{/appointments/:id}). Show the map showing clinic location.}
+
+\say{The appointment detail page shows complete information including a map with the clinic's exact location using Leaflet and OpenStreetMap. The status is displayed with color-coded badges, and the consultation mode and fee are clearly indicated. For each status --- pending, confirmed, completed, cancelled, and no-show --- the page shows role-specific messages explaining what the status means from the current user's perspective.}
+
+\show{Briefly show the status badge and the map. Then navigate back.}
+
+\trans{Navigate to ``Shop'' in the navbar.}
+
+\newpage
+
+%═══════════════════════════════════════════════════════════════
+\section{Section 7 --- E-Commerce Shop \& Cart}
+\label{sec:ecommerce}
+%═══════════════════════════════════════════════════════════════
+
+\timing{2:30} \hfill \critical
+
+\subsection{Product Browsing \& Filters (10:00 -- 10:30)}
+
+\show{Product listing page (\texttt{/products}). Ensure products with images are visible across categories.}
+
+\say{Now let's look at the e-commerce module. The Shop page displays all pet products with a card layout showing the product image, name, price, category, rating, and stock status. Products on sale show both the original and discounted prices.}
+
+\show{Use the filter controls --- select a category (e.g., ``Food''), toggle ``In Stock Only'', enter a price range, and type in the search box. Show results updating.}
+
+\say{Just like the pet listing, products can be filtered by category --- food, toys, accessories, grooming, health, and training --- with additional filters for price range, stock availability, and text search. The filters use the same debounced pattern to minimize API calls.}
+
+\subsection{Product Detail \& Reviews (10:30 -- 11:15)}
+
+\show{Click on a product card to open the product detail page (\texttt{/products/:id}).}
+
+\say{The product detail page features an image carousel with smooth slide animations, detailed specifications including weight, dimensions, material, and brand. The price section shows sale prices with discount percentages when applicable.}
+
+\show{Scroll down to the reviews section. Show the rating breakdown with progress bars and individual reviews.}
+
+\say{Below the product details, we have a comprehensive review system. The rating breakdown shows the distribution of 1 to 5-star reviews using progress bars. Individual reviews display the reviewer's name, rating, date, and comment. Customers who have purchased and received the product can write reviews --- the system checks review eligibility by verifying the customer has a delivered order containing that product. Reviews also have a helpful-vote feature.}
+
+\show{Point to the ``Add to Cart'' button. Set quantity to 2 and click ``Add to Cart''. Show the cart badge updating in the navbar.}
+
+\say{Adding products to the cart is straightforward. The quantity selector respects the available stock, and the cart badge in the navbar updates immediately thanks to Redux state management.}
+
+\subsection{Shopping Cart (11:15 -- 11:45)}
+
+\show{Click the cart icon in navbar. Navigate to Cart page (\texttt{/cart}).}
+
+\say{The cart page shows all items with their images, names, prices, and quantity controls. Users can increase or decrease quantities or remove items entirely. The cart summary displays the subtotal, and the system validates stock availability in real time --- if a product goes out of stock, the user is notified.}
+
+\show{Adjust a quantity using the plus/minus buttons. Show the subtotal updating.}
+
+\subsection{Checkout Process (11:45 -- 12:30)}
+
+\show{Click ``Proceed to Checkout''. Show the Checkout page (\texttt{/checkout}).}
+
+\say{The checkout process collects shipping information --- full name, phone number with 10-digit validation, complete address, city, state, and a 6-digit PIN code validated for the Indian format. The payment section currently supports Cash on Delivery, with provisions for credit card, UPI, and net banking coming soon.}
+
+\show{Fill in shipping details with sample data. Point to the Order Summary panel on the right showing subtotal, GST at 18 percent, shipping fee, and total.}
+
+\say{The order summary panel calculates everything --- subtotal, 18 percent GST, and shipping which is free for orders above 1000 rupees. Once the user places the order, the system creates the order in the database, decrements product stock, clears the cart, and redirects to a success page with the order details.}
+
+\show{Click ``Place Order''. Show the Order Success page briefly.}
+
+\say{The customer can then track their orders from the My Orders page, which shows order status, items, totals, and delivery progress.}
+
+\trans{Navigate to Customer Dashboard.}
+
+\newpage
+
+%═══════════════════════════════════════════════════════════════
+\section{Section 8 --- Customer Dashboard}
+\label{sec:customer-dash}
+%═══════════════════════════════════════════════════════════════
+
+\timing{1:00} \hfill Recommended
+
+\subsection{Dashboard Overview (12:30 -- 13:00)}
+
+\show{Customer Dashboard page (\texttt{/dashboard}). Ensure stats cards and tables are populated.}
+
+\say{The customer dashboard serves as a central hub. At the top, four statistics cards display total orders, upcoming appointments, adoption applications, and pets adopted. Below that, quick-action cards provide shortcuts to Shop Products, Adopt a Pet, and Book Appointment.}
+
+\show{Scroll down to show Recent Orders table and Upcoming Appointments table.}
+
+\say{Further down, we have the recent orders table showing order IDs, dates, item counts, totals, and status badges. The upcoming appointments table shows scheduled visits with the veterinarian name, pet details, and appointment status. There's also a My Messages section showing contact form submissions and admin replies.}
+
+\subsection{Order Tracking (13:00 -- 13:30)}
+
+\show{Click ``View'' on a recent order to open Order Detail. Show order status, items, shipping info.}
+
+\say{Each order can be viewed in detail showing the order status progression, ordered items with images, shipping information, and payment details. Customers can also cancel orders that haven't been shipped yet.}
+
+\trans{Log out. Log in as a Veterinary user. Navigate to Vet Dashboard.}
+
+\newpage
+
+%═══════════════════════════════════════════════════════════════
+\section{Section 9 --- Veterinary Dashboard}
+\label{sec:vet-dash}
+%═══════════════════════════════════════════════════════════════
+
+\timing{1:00} \hfill Recommended
+
+\subsection{Vet Dashboard \& Appointment Management (13:30 -- 14:15)}
+
+\show{Vet Dashboard (\texttt{/vet/dashboard}). Show the stats cards and appointment list.}
+
+\say{Now let's switch to the veterinarian's perspective. The vet dashboard shows today's appointments, pending confirmations, total completed appointments, and revenue statistics. The revenue section follows a marketplace model --- showing total revenue, a 10 percent platform commission, and the net earnings payable to the vet.}
+
+\show{Point to the revenue metrics: Total Revenue, Commission (10\%), Net Earnings, and Pending Payments.}
+
+\say{Veterinarians manage appointments directly from their dashboard. They can update appointment status --- confirming pending appointments, marking them as completed, or recording no-shows. They can also update payment status and add clinical notes for each visit.}
+
+\show{Show the appointment list. Click on an appointment's status update button. Show the status update modal with status, payment status, and notes fields.}
+
+\subsection{Clinic Settings (14:15 -- 14:30)}
+
+\show{Scroll down to the Clinic Settings section. Show the address fields and the LocationPickerMap.}
+
+\say{In the Clinic Settings section, veterinarians can update their clinic address and pick their exact location on an interactive map. This location is used for the geospatial search that customers use when booking appointments. The map component uses Leaflet with OpenStreetMap tiles.}
+
+\trans{Log out. Log in as an Organization user. Navigate to Organization Dashboard.}
+
+\newpage
+
+%═══════════════════════════════════════════════════════════════
+\section{Section 10 --- Organization Dashboard}
+\label{sec:org-dash}
+%═══════════════════════════════════════════════════════════════
+
+\timing{1:00} \hfill Recommended
+
+\subsection{Approval Gate \& Stats Overview (14:30 -- 14:50)}
+
+\show{Organization Dashboard (\texttt{/organization/dashboard}). Show the welcome message with the organization name and the stats cards.}
+
+\say{Now let's look at the Organization role. Organizations are animal shelters and rescue groups that list pets for adoption. Like veterinarians, organization accounts require admin approval before they can start uploading pets. Once approved, the organization dashboard displays four statistics cards --- Total Pets uploaded, Available pets ready for adoption, Pending pets awaiting admin approval, and Adopted pets that have found forever homes.}
+
+\show{Point to each of the four stats cards: Total Pets, Available, Pending, Adopted.}
+
+\subsection{Pet Management \& Adoption Requests (14:50 -- 15:15)}
+
+\show{Scroll down to the ``Your Pets'' table showing the list of uploaded pets with images, names, species, breed, status badges, and date added.}
+
+\say{Below the statistics, the dashboard shows the organization's pet listings in a detailed table with images, names, species, breed, status badges, and the date each pet was added. Organizations can edit any of their pets directly from here.}
+
+\show{Point to the ``Adoption Requests'' card above the pet table. Click ``Manage Adoption Requests'' to navigate to (\texttt{/organization/applications}).}
+
+\say{The Adoption Requests section is a key feature for organizations. When customers submit adoption applications for any of the organization's pets, those applications appear here. The organization can review each application --- checking the applicant's housing type, yard availability, pet experience, and reason for adopting --- and then approve or reject the application. This gives organizations full control over who adopts their animals.}
+
+\subsection{Adding a New Pet (15:15 -- 15:30)}
+
+\show{Click the ``Add New Pet'' button in the dashboard header. Show the Pet Form page (\texttt{/organization/pets/new}) briefly.}
+
+\say{Organizations can add new pets using a comprehensive form that captures the pet's name, species, breed, age, gender, size, color, description, adoption fee, and multiple images. The form also includes detailed health information --- vaccination, neutering, and microchip status --- behavioral traits like energy and training level, and compatibility details such as whether the pet is good with children, dogs, or cats. Once submitted, the pet listing goes through admin approval before appearing on the public adoption page.}
+
+\show{Scroll through the pet form briefly to show the fields. Do NOT submit --- just show the form structure.}
+
+\trans{Log out. Log in as Admin. Navigate to Admin Dashboard.}
+
+\newpage
+
+%═══════════════════════════════════════════════════════════════
+\section{Section 11 --- Admin \& Co-Admin Dashboard}
+\label{sec:admin}
+%═══════════════════════════════════════════════════════════════
+
+\timing{1:30} \hfill \critical
+
+\subsection{Admin Dashboard Analytics (15:30 -- 16:15)}
+
+\show{Admin Dashboard (\texttt{/admin}). Ensure KPI cards and revenue chart are visible.}
+
+\say{The admin dashboard is the command center of the platform. At the top, four KPI cards show total users with new registrations, total pets with available and adopted counts, total products with low-stock alerts, and total orders with recent activity.}
+
+\show{Point to each KPI card. Then scroll to the Revenue Analytics section.}
+
+\say{The Revenue Analytics section is powered by Recharts. Admins can toggle between weekly, monthly, and yearly views. The area chart shows the revenue trend over the selected period. Below the chart, four revenue metrics break down the finances --- Gross Merchandise Value, seller commission at 10 percent, veterinary appointment revenue, and total platform revenue including tax and shipping.}
+
+\show{Click different period buttons (1 Week, 1 Month, 1 Year) to show the chart updating. Point to the revenue metric cards.}
+
+\say{The user breakdown section shows counts by role --- customers, sellers, veterinaries, organizations, and co-admins --- along with pending approval counts.}
+
+\subsection{Admin Management Panels (16:15 -- 16:45)}
+
+\show{Navigate to User Management (\texttt{/admin/users}). Show the user table with role badges and approval status.}
+
+\say{The admin has full management capabilities across the platform. The User Management panel lists all users with their roles, approval status, and registration dates. Admins can approve pending sellers, veterinarians, and organizations, or suspend accounts when needed. Role-based access control is enforced at both the frontend route level and the backend middleware level.}
+
+\show{Navigate to Product Management (\texttt{/admin/products}). Show the product table briefly.}
+
+\say{Similarly, admins can manage all products, orders, pet listings, and adoption applications. The Order Management panel lets admins view and track all orders across the platform.}
+
+\show{Navigate to Appointment Management (\texttt{/admin/appointments}). Show the appointments table.}
+
+\say{The Appointments Management section shows all appointments across all veterinarians, giving admins a complete view of the platform's activity.}
+
+\subsection{Co-Admin Dashboard (16:45 -- 17:00)}
+
+\show{Log out. Log in as Co-Admin. Show the Co-Admin Dashboard (\texttt{/admin}).}
+
+\say{The Co-Admin role is a restricted administrative position. Co-admins see the same KPI cards and management panels as the full admin, but without access to revenue analytics and certain sensitive operations like revenue breakdown. They can manage users, products, and pets, and handle pending approvals --- making them ideal for day-to-day platform moderation.}
+
+\trans{Navigate to the notification bell in the navbar.}
+
+\newpage
+
+%═══════════════════════════════════════════════════════════════
+\section{Section 12 --- Notifications System}
+\label{sec:notifications}
+%═══════════════════════════════════════════════════════════════
+
+\timing{0:30} \hfill Optional
+
+\subsection{In-App Notifications (17:00 -- 17:30)}
+
+\show{Click the notification bell icon in the navbar. Then navigate to the Notifications page (\texttt{/notifications}).}
+
+\say{Tail Waggers includes a comprehensive in-app notification system. The notification bell in the navbar shows the count of unread notifications. The notifications page categorizes alerts by type --- order updates, appointment status changes, and adoption application updates --- each with distinct icons and color-coded badges. Users can filter between all and unread notifications, mark individual notifications as read, mark all as read, or clear all notifications. Each notification is clickable and navigates directly to the relevant resource. Timestamps are displayed in a human-readable relative format like ``5 minutes ago'' or ``2 hours ago.''}
+
+\show{Show the notifications list. Click ``Mark All as Read''. Show the unread count resetting.}
+
+\trans{Continue to the technology stack section.}
+
+\newpage
+
+%═══════════════════════════════════════════════════════════════
+\section{Section 13 --- Technology Stack \& Architecture}
+\label{sec:tech}
+%═══════════════════════════════════════════════════════════════
+
+\timing{1:30} \hfill \critical
+
+\subsection{Frontend Technologies (17:30 -- 18:00)}
+
+\show{Display a slide or text editor showing the frontend technology list. Alternatively, briefly open \texttt{frontend/package.json} to show dependencies.}
+
+\say{Let me walk you through the technology stack. On the frontend, the application is built with \textbf{React 18} using functional components and hooks. State management is handled by \textbf{Redux Toolkit} with createAsyncThunk for asynchronous operations across nine Redux slices --- auth, products, pets, cart, orders, appointments, admin, dashboard, and messages.}
+
+\say{The UI is built with \textbf{React Bootstrap} and \textbf{Bootstrap 5} for responsive components and layout. Routing uses \textbf{React Router v6} with lazy loading for code splitting and protected routes for role-based access control. HTTP requests are managed by \textbf{Axios} with interceptors for automatic JWT token attachment.}
+
+\say{For maps and geolocation, we use \textbf{Leaflet} and \textbf{React-Leaflet} with OpenStreetMap tiles. The admin dashboard's revenue charts are rendered using \textbf{Recharts} with area charts, gradients, and responsive containers.}
+
+\subsection{Backend Technologies (18:00 -- 18:30)}
+
+\show{Optionally show \texttt{backend/package.json} or a prepared architecture slide.}
+
+\say{On the backend, the server runs on \textbf{Node.js} with \textbf{Express 4.18}. The database is \textbf{MongoDB} accessed through \textbf{Mongoose} ODM with structured schemas, virtual fields, text indexes, and geospatial 2dsphere indexes for location queries.}
+
+\say{Authentication uses \textbf{JSON Web Tokens} with \textbf{bcrypt.js} for password hashing. The server is secured with \textbf{Helmet} for HTTP security headers, \textbf{CORS} configuration, \textbf{express-rate-limit} for API rate limiting, and \textbf{compression} for response optimization. File uploads --- for pet images, product images, and user avatars --- are handled by \textbf{Multer}. Input validation uses \textbf{express-validator}.}
+
+\subsection{External APIs (18:30 -- 19:00)}
+
+\say{The platform integrates with several external services. \textbf{Nominatim} provides geocoding to convert addresses into coordinates. \textbf{OSRM} --- the Open Source Routing Machine --- calculates real driving distances between users and vet clinics. And \textbf{OpenStreetMap} provides the map tiles rendered by Leaflet. All three are open-source, requiring no API keys, which makes the application fully self-contained and free to deploy.}
+
+\say{The development workflow uses \textbf{VS Code} as the IDE, \textbf{Git} for version control, \textbf{npm} for package management, and \textbf{Nodemon} for automatic server restarts during development.}
+
+\trans{Pause briefly. Prepare for the conclusion.}
+
+\newpage
+
+%═══════════════════════════════════════════════════════════════
+\section{Section 14 --- Conclusion \& Future Scope}
+\label{sec:conclusion}
+%═══════════════════════════════════════════════════════════════
+
+\timing{0:30} \hfill \critical
+
+\subsection{Project Impact (19:00 -- 19:15)}
+
+\show{Return to the homepage. Show the hero section with trust indicators.}
+
+\say{To summarize, Tail Waggers is a comprehensive full-stack MERN application that unifies pet adoption, veterinary care, and pet e-commerce into a single platform. It demonstrates proficiency in modern web development --- from React component architecture and Redux state management on the frontend, to Express API design, MongoDB geospatial queries, and JWT authentication on the backend.}
+
+\subsection{Future Enhancements (19:15 -- 19:30)}
+
+\say{Looking ahead, future enhancements could include real-time chat between customers and veterinarians using WebSockets, online payment gateway integration with Razorpay or Stripe, video consultation functionality for remote vet appointments, a mobile application using React Native, AI-powered pet matching based on user preferences, and a community forum for pet owners to share experiences and advice.}
+
+\subsection{Closing (19:30 -- 19:45)}
+
+\say{Thank you for watching this demonstration of Tail Waggers. The platform showcases how modern web technologies can come together to solve real-world problems in the pet care ecosystem. I'm happy to answer any questions you may have.}
+
+\show{End with the homepage displayed. Fade out or stop recording.}
+
+\newpage
+
+%═══════════════════════════════════════════════════════════════
+\section*{Appendix A --- Pre-Recording Checklist}
+%═══════════════════════════════════════════════════════════════
+\addcontentsline{toc}{section}{Appendix A --- Pre-Recording Checklist}
+
+\begin{tcolorbox}[colback=red!3, colframe=red!40!black, title=\textbf{Before You Hit Record}]
+\begin{enumerate}[nosep]
+  \item \textbf{Start both servers:} Backend on port 5000, Frontend on port 3000.
+  \item \textbf{Seed the database} with at least:
+    \begin{itemize}[nosep]
+      \item 6--8 pets (mix of species, with images)
+      \item 8--10 products across categories (with images, reviews, and stock)
+      \item 3--4 veterinarians (approved, with clinic locations and time slots)
+      \item 1 customer account with existing orders, appointments, and applications
+      \item 1 seller account with products listed
+      \item 1 admin and 1 co-admin account
+      \item 1 organization account with pets listed
+    \end{itemize}
+  \item \textbf{Browser:} Use Chrome or Edge. Clear cache. Set zoom to 100\%.
+  \item \textbf{Screen resolution:} 1920$\times$1080 recommended.
+  \item \textbf{Close unnecessary tabs and notifications} to avoid distractions.
+  \item \textbf{Prepare login credentials} for each role (keep in a notepad).
+  \item \textbf{Allow location access} in browser for the appointment booking demo.
+  \item \textbf{Test the recording software} (OBS, Loom, or similar) before starting.
+  \item \textbf{Rehearse once} to confirm flow and timing.
+\end{enumerate}
+\end{tcolorbox}
+
+\vspace{0.5cm}
+
+%═══════════════════════════════════════════════════════════════
+\section*{Appendix B --- Account Credentials Reference}
+%═══════════════════════════════════════════════════════════════
+\addcontentsline{toc}{section}{Appendix B --- Account Credentials Reference}
+
+\begin{tcolorbox}[colback=gray!5, colframe=gray!50!black, title=\textbf{Demo Accounts (fill in before recording)}]
+\begin{longtable}{@{} l l l @{}}
+  \toprule
+  \textbf{Role} & \textbf{Email} & \textbf{Password} \\
+  \midrule
+  Customer      & \rule{5cm}{0.4pt} & \rule{3cm}{0.4pt} \\
+  Seller        & \rule{5cm}{0.4pt} & \rule{3cm}{0.4pt} \\
+  Veterinary    & \rule{5cm}{0.4pt} & \rule{3cm}{0.4pt} \\
+  Organization  & \rule{5cm}{0.4pt} & \rule{3cm}{0.4pt} \\
+  Admin         & \rule{5cm}{0.4pt} & \rule{3cm}{0.4pt} \\
+  Co-Admin      & \rule{5cm}{0.4pt} & \rule{3cm}{0.4pt} \\
+  \bottomrule
+\end{longtable}
+\end{tcolorbox}
+
+\vspace{0.5cm}
+
+%═══════════════════════════════════════════════════════════════
+\section*{Appendix C --- Narration Key}
+%═══════════════════════════════════════════════════════════════
+\addcontentsline{toc}{section}{Appendix C --- Narration Key}
+
+\begin{tcolorbox}[colback=blue!3, colframe=blue!40!black]
+\begin{itemize}[nosep]
+  \item \say{Text in this format is your spoken narration.}
+  \item \show{Text in this format describes what to display on screen.}
+  \item \timing{Indicates the time allocation for that segment.}
+  \item \trans{Tells you when and how to move to the next part.}
+  \item \critical{} marks sections that must not be skipped.
+\end{itemize}
+\end{tcolorbox}
+
+\end{document}

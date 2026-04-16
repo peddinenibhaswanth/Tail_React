@@ -1,0 +1,42 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build output
+/dist
+/build
+
+# Uploaded files
+backend/uploads/
+
+# IDE files
+.vscode/
+.idea/
+
+# Coverage
+coverage/
+
+# Test reports (Jest junit + coverage dir configured under backend/test-reports)
+backend/test-reports/
+
+# mongodb-memory-server cached binaries
+backend/.cache/
+
+# Misc
+*.swp
+Project_React/
+Project_React.zip
+*.txt
