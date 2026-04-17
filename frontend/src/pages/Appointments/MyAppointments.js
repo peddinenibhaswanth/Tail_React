@@ -11,9 +11,8 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  getMyAppointments,
+  getUserAppointments,
   cancelAppointment,
-  reset,
 } from "../../redux/slices/appointmentSlice";
 import Loading from "../../components/common/Loading";
 import { formatDate, formatDateTime } from "../../utils/formatters";
@@ -26,8 +25,7 @@ const MyAppointments = () => {
   );
 
   useEffect(() => {
-    dispatch(getMyAppointments());
-    return () => dispatch(reset());
+    dispatch(getUserAppointments());
   }, [dispatch]);
 
   const getStatusVariant = (status) => {
@@ -56,21 +54,33 @@ const MyAppointments = () => {
     return status === "pending" || status === "confirmed";
   };
 
-  if (isLoading) {
+  if (isLoading && !appointments?.length) {
     return <Loading />;
   }
 
   return (
     <Container className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="fw-bold">My Appointments</h2>
-        <Button
-          variant="primary"
-          onClick={() => navigate("/appointments/book")}
-        >
-          <i className="bi bi-plus-circle me-2"></i>
-          Book New Appointment
-        </Button>
+        <div>
+          <h2 className="fw-bold mb-1">My Appointments</h2>
+          <p className="text-muted mb-0 small">Track all your scheduled visits</p>
+        </div>
+        <div className="d-flex gap-2">
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            onClick={() => navigate("/dashboard")}
+          >
+            <i className="bi bi-arrow-left me-1"></i>Back to Dashboard
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => navigate("/appointments/book")}
+          >
+            <i className="bi bi-plus-circle me-2"></i>
+            Book New Appointment
+          </Button>
+        </div>
       </div>
 
       {isError && (
@@ -98,19 +108,39 @@ const MyAppointments = () => {
                       </div>
                       <div className="text-muted">
                         <i className="bi bi-clock me-2"></i>
-                        {appointment.timeSlot}
+                        {appointment.timeSlot?.start
+                          ? `${appointment.timeSlot.start} - ${appointment.timeSlot.end}`
+                          : appointment.timeSlot || "N/A"}
                       </div>
                     </Col>
 
                     <Col md={3}>
                       <div className="mb-1">
+                        <i className="bi bi-stethoscope me-2"></i>
+                        Dr. {appointment.veterinary?.name || "N/A"}
+                      </div>
+                      <div className="mb-1">
                         <i className="bi bi-gear me-2"></i>
-                        {appointment.service}
+                        {appointment.reason ||
+                          appointment.service ||
+                          "General Checkup"}
                       </div>
                       <div>
                         <Badge bg={getStatusVariant(appointment.status)}>
                           {appointment.status || "Pending"}
                         </Badge>
+                        {appointment.status === "cancelled" && appointment.cancelledByRole && (
+                          <div className="mt-1">
+                            <small className="text-muted">
+                              <i className="bi bi-info-circle me-1"></i>
+                              {appointment.cancelledByRole === "customer"
+                                ? "You cancelled"
+                                : appointment.cancelledByRole === "veterinary"
+                                  ? "Cancelled by veterinarian"
+                                  : `Cancelled by ${appointment.cancelledByRole}`}
+                            </small>
+                          </div>
+                        )}
                       </div>
                     </Col>
 

@@ -11,7 +11,7 @@ import {
   Image,
 } from "react-bootstrap";
 import { useDispatch } from "react-redux";
-import { useAuth } from "../../hooks/useAuth";
+import useAuth from "../../hooks/useAuth";
 import {
   updateProfile,
   changePassword,
@@ -26,7 +26,7 @@ import Loading from "../../components/common/Loading";
 
 const Profile = () => {
   const dispatch = useDispatch();
-  const { user, isLoading, isError, isSuccess, message } = useAuth();
+  const { user, isLoading } = useAuth();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -42,6 +42,9 @@ const Profile = () => {
 
   const [errors, setErrors] = useState({});
   const [editMode, setEditMode] = useState(false);
+  const [profileStatus, setProfileStatus] = useState({ type: "", message: "" });
+  const [passwordStatus, setPasswordStatus] = useState({ type: "", message: "" });
+  const [pwdLoading, setPwdLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -53,17 +56,6 @@ const Profile = () => {
     }
   }, [user]);
 
-  useEffect(() => {
-    if (isSuccess) {
-      setEditMode(false);
-      setPasswordData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-      dispatch(reset());
-    }
-  }, [isSuccess, dispatch]);
 
   const validateProfileForm = () => {
     const newErrors = {};
@@ -103,29 +95,43 @@ const Profile = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const onProfileSubmit = (e) => {
+  const onProfileSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateProfileForm()) {
-      return;
+    if (!validateProfileForm()) return;
+    setProfileStatus({ type: "", message: "" });
+    try {
+      await dispatch(updateProfile(formData)).unwrap();
+      setProfileStatus({ type: "success", message: "Profile updated successfully!" });
+      setEditMode(false);
+      dispatch(reset());
+    } catch (err) {
+      setProfileStatus({ type: "danger", message: err || "Failed to update profile" });
+      dispatch(reset());
     }
-
-    dispatch(updateProfile(formData));
   };
 
-  const onPasswordSubmit = (e) => {
+  const onPasswordSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validatePasswordForm()) {
-      return;
+    if (!validatePasswordForm()) return;
+    setPasswordStatus({ type: "", message: "" });
+    setPwdLoading(true);
+    try {
+      await dispatch(
+        changePassword({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+          confirmPassword: passwordData.confirmPassword,
+        })
+      ).unwrap();
+      setPasswordStatus({ type: "success", message: "Password changed successfully!" });
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      dispatch(reset());
+    } catch (err) {
+      setPasswordStatus({ type: "danger", message: err || "Failed to change password" });
+      dispatch(reset());
+    } finally {
+      setPwdLoading(false);
     }
-
-    dispatch(
-      changePassword({
-        currentPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword,
-      })
-    );
   };
 
   const handleProfileChange = (e) => {
@@ -257,6 +263,16 @@ const Profile = () => {
                     </Form.Group>
 
                     <div className="d-flex gap-2">
+                      {profileStatus.message && (
+                        <div
+                          className={`alert alert-${profileStatus.type} w-100 mb-3 py-2`}
+                          role="alert"
+                        >
+                          {profileStatus.message}
+                        </div>
+                      )}
+                    </div>
+                    <div className="d-flex gap-2">
                       {!editMode ? (
                         <Button
                           variant="primary"
@@ -330,28 +346,26 @@ const Profile = () => {
                       </Form.Control.Feedback>
                     </Form.Group>
 
+                    {passwordStatus.message && (
+                      <div
+                        className={`alert alert-${passwordStatus.type} mb-3 py-2`}
+                        role="alert"
+                      >
+                        {passwordStatus.message}
+                      </div>
+                    )}
+
                     <Button
                       type="submit"
                       variant="primary"
-                      disabled={isLoading}
+                      disabled={isLoading || pwdLoading}
                     >
-                      {isLoading ? "Updating..." : "Update Password"}
+                      {pwdLoading ? "Updating..." : "Update Password"}
                     </Button>
                   </Form>
                 </Tab>
               </Tabs>
 
-              {isError && message && (
-                <div className="alert alert-danger mt-3" role="alert">
-                  {message}
-                </div>
-              )}
-
-              {isSuccess && message && (
-                <div className="alert alert-success mt-3" role="alert">
-                  {message}
-                </div>
-              )}
             </Card.Body>
           </Card>
         </Col>

@@ -10,9 +10,9 @@ import {
 } from "react-bootstrap";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { getPetById } from "../../redux/slices/petSlice";
+import { getPet } from "../../redux/slices/petSlice";
 import axios from "../../api/axios";
-import { useAuth } from "../../hooks/useAuth";
+import useAuth from "../../hooks/useAuth";
 import Loading from "../../components/common/Loading";
 
 const AdoptionApplication = () => {
@@ -20,7 +20,7 @@ const AdoptionApplication = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useAuth();
-  const { currentPet, isLoading } = useSelector((state) => state.pets);
+  const { pet: currentPet, isLoading } = useSelector((state) => state.pets);
 
   const [formData, setFormData] = useState({
     housingType: "",
@@ -39,7 +39,7 @@ const AdoptionApplication = () => {
 
   useEffect(() => {
     if (id) {
-      dispatch(getPetById(id));
+      dispatch(getPet(id));
     }
   }, [dispatch, id]);
 
@@ -66,9 +66,8 @@ const AdoptionApplication = () => {
       newErrors.experience = "Please describe your experience with pets";
     }
 
-    if (!formData.reason || formData.reason.length < 50) {
-      newErrors.reason =
-        "Please provide a detailed reason (at least 50 characters)";
+    if (!formData.reason) {
+      newErrors.reason = "Please provide a reason for adopting";
     }
 
     if (!formData.employmentStatus) {
@@ -142,9 +141,11 @@ const AdoptionApplication = () => {
     <Container className="py-4">
       <Row className="justify-content-center">
         <Col lg={8}>
-          <Card className="shadow-sm">
+          <Card className="border-0 shadow-sm">
             <Card.Body className="p-4">
-              <h3 className="fw-bold mb-1">Adoption Application</h3>
+              <h3 className="fw-bold mb-1">
+                <i className="bi bi-file-earmark-text me-2 text-primary"></i>Adoption Application
+              </h3>
               <p className="text-muted mb-4">
                 Applying to adopt: <strong>{currentPet.name}</strong> (
                 {currentPet.breed})
@@ -266,12 +267,9 @@ const AdoptionApplication = () => {
                     name="reason"
                     value={formData.reason}
                     onChange={handleChange}
-                    placeholder="Please provide a detailed explanation (minimum 50 characters)..."
+                    placeholder="Tell us why you want to adopt this pet..."
                     isInvalid={!!errors.reason}
                   />
-                  <Form.Text className="text-muted">
-                    {formData.reason.length}/50 characters minimum
-                  </Form.Text>
                   <Form.Control.Feedback type="invalid">
                     {errors.reason}
                   </Form.Control.Feedback>
@@ -290,11 +288,12 @@ const AdoptionApplication = () => {
                 </Form.Group>
 
                 <div className="d-flex gap-2">
-                  <Button variant="primary" type="submit" disabled={submitting}>
+                  <Button variant="primary" type="submit" disabled={submitting} className="rounded-pill px-4">
                     {submitting ? "Submitting..." : "Submit Application"}
                   </Button>
                   <Button
                     variant="outline-secondary"
+                    className="rounded-pill px-4"
                     onClick={() => navigate(`/pets/${id}`)}
                     disabled={submitting}
                   >
