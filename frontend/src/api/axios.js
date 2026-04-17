@@ -8,9 +8,11 @@ const axiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true, // Keep for CORS support
 });
 
-// Request interceptor - Add auth token
+// Request interceptor - Add JWT token to every request
+// This automatically attaches the token stored in localStorage to the Authorization header
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -28,24 +30,33 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle network errors
+    // Handle network errors (backend down)
     if (!error.response) {
-      console.error("Network error:", error.message);
+      console.error("CRITICAL: Backend connection failed!");
+      // You could also dispatch a global error action here if you had access to the store
       return Promise.reject({
-        message: "Network error. Please check your connection.",
+        message: "Server is currently unreachable. Please ensure the backend is running.",
         isNetworkError: true,
+        status: 0,
+        data: null
       });
     }
 
-    const { status, data } = error.response;
+    const { status, data, config } = error.response;
 
-    // Handle 401 Unauthorized - Clear storage and redirect to login
+    // Handle 401 Unauthorized
     if (status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      // Only redirect if not already on login page
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
+      // Don't redirect for auth check endpoints - just let them fail silently
+      const isAuthCheck = config.url?.includes("/api/auth/current");
+
+      if (!isAuthCheck) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        // Only redirect if not already on login/register pages
+        const currentPath = window.location.pathname;
+        if (currentPath !== "/login" && currentPath !== "/register") {
+          window.location.href = "/login";
+        }
       }
     }
 
