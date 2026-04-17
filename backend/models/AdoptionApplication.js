@@ -1,5 +1,44 @@
 const mongoose = require("mongoose");
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     AdoptionApplication:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: The auto-generated id of the application
+ *         pet:
+ *           type: string
+ *           description: The ID of the pet being adopted
+ *         applicant:
+ *           type: string
+ *           description: The ID of the user applying for adoption
+ *         personalInfo:
+ *           type: object
+ *           properties:
+ *             fullName:
+ *               type: string
+ *             age:
+ *               type: number
+ *             occupation:
+ *               type: string
+ *             phoneNumber:
+ *               type: string
+ *         status:
+ *           type: string
+ *           enum: [pending, under_review, approved, rejected, withdrawn]
+ *           default: pending
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ */
+
 const adoptionApplicationSchema = new mongoose.Schema(
   {
     // Reference to the pet being adopted
