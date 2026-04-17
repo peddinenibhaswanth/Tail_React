@@ -195,10 +195,27 @@ exports.createAppointment = async (req, res) => {
       });
     }
 
+    // Parse timeSlot - can be string "09:00-10:00" or object {start, end}
+    let timeSlotObj;
+    if (typeof timeSlot === "string") {
+      const [start, end] = timeSlot.split("-");
+      timeSlotObj = {
+        start: start.trim(),
+        end: end ? end.trim() : start.trim(),
+      };
+    } else if (timeSlot && timeSlot.start) {
+      timeSlotObj = timeSlot;
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid time slot format",
+      });
+    }
+
     const existingAppointment = await Appointment.findOne({
       veterinary,
       date: new Date(date),
-      timeSlot,
+      "timeSlot.start": timeSlotObj.start,
       status: { $in: ["pending", "confirmed"] },
     });
 
@@ -209,15 +226,22 @@ exports.createAppointment = async (req, res) => {
       });
     }
 
+    // Normalize petType to lowercase
+    const normalizedPetType = petType ? petType.toLowerCase() : "other";
+
+    // Default consultation fee (can be dynamic based on vet or service)
+    const consultationFee = vet.vetInfo?.consultationFee || 500;
+
     const appointment = await Appointment.create({
       customer: req.user._id,
       veterinary,
       petName,
-      petType,
-      petAge,
+      petType: normalizedPetType,
+      petAge: petAge || "",
       date: new Date(date),
-      timeSlot,
-      reason,
+      timeSlot: timeSlotObj,
+      reason: reason || "General Checkup",
+      consultationFee,
     });
 
     const populatedAppointment = await Appointment.findById(appointment._id)
@@ -312,7 +336,7 @@ exports.updateAppointment = async (req, res) => {
 // @access  Private (Veterinary/Admin)
 exports.updateAppointmentStatus = async (req, res) => {
   try {
-    const { status, notes } = req.body;
+    const { status, notes, paymentStatus } = req.body;
 
     const appointment = await Appointment.findById(req.params.id);
 
@@ -334,16 +358,106 @@ exports.updateAppointmentStatus = async (req, res) => {
       });
     }
 
-    const validStatuses = ["pending", "confirmed", "completed", "cancelled"];
-    if (!validStatuses.includes(status)) {
+    const validStatuses = [
+      "pending",
+      "confirmed",
+      "in-progress",
+      "completed",
+      "cancelled",
+      "no-show",
+    ];
+    if (status && !validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
         message: "Invalid status value",
       });
     }
 
-    appointment.status = status;
-    if (notes) appointment.notes = notes;
+    if (status) appointment.status = status;
+    if (notes !== undefined) appointment.notes = notes;
+
+    // Update payment status if provided
+    if (paymentStatus) {
+      const validPaymentStatuses = ["pending", "paid", "refunded"];
+      if (validPaymentStatuses.includes(paymentStatus)) {
+        appointment.paymentStatus = paymentStatus;
+      }
+    }
+
+    if (status === "completed") {
+      appointment.paymentStatus = "paid";
+
+      // Record revenue for this appointment
+      try {
+        const Transaction = require("../models/Transaction");
+        const Revenue = require("../models/Revenue");
+        const User = require("../models/User");
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const periodIdentifier = today.toISOString().split("T")[0];
+
+        let revenueRecord = await Revenue.findOne({ periodType: "daily", periodIdentifier });
+        if (!revenueRecord) {
+          revenueRecord = new Revenue({
+            date: today, periodType: "daily", periodIdentifier,
+            summary: { totalRevenue: 0, totalTax: 0, totalCommission: 0, totalPayouts: 0, totalOrders: 0, totalTransactions: 0 }
+          });
+        }
+
+        // Get Vet's commission rate
+        const vet = await User.findById(appointment.veterinary);
+        const commissionRate = vet?.vetInfo?.commissionRate || 10;
+        const commission = appointment.consultationFee * (commissionRate / 100);
+        const vetNet = appointment.consultationFee - commission;
+
+        // 1. Update Vet Balance
+        if (vet) {
+          vet.balance = (vet.balance || 0) + vetNet;
+          await vet.save();
+        }
+
+        // 2. Transaction Ledger entry for the Appointment
+        await Transaction.create({
+          appointment: appointment._id,
+          user: appointment.veterinary,
+          type: "sale",
+          amount: appointment.consultationFee,
+          commission: commission,
+          netAmount: vetNet,
+          description: `Veterinary consultation: ${appointment.petName} (${appointment.service})`
+        });
+
+        // 3. Update Global Revenue Record
+        revenueRecord.appointments.totalAppointments += 1;
+        revenueRecord.appointments.totalRevenue += appointment.consultationFee;
+        revenueRecord.summary.totalRevenue += appointment.consultationFee;
+        revenueRecord.summary.totalCommission += commission;
+        revenueRecord.summary.totalTransactions += 1;
+
+        // Add to veterinary breakdown in Revenue record
+        const vetIndex = revenueRecord.appointments.byVeterinary.findIndex(
+          (v) => v.veterinary && v.veterinary.toString() === appointment.veterinary.toString()
+        );
+
+        if (vetIndex === -1) {
+          revenueRecord.appointments.byVeterinary.push({
+            veterinary: appointment.veterinary,
+            name: vet?.name || "Unknown",
+            count: 1,
+            revenue: appointment.consultationFee,
+          });
+        } else {
+          revenueRecord.appointments.byVeterinary[vetIndex].count += 1;
+          revenueRecord.appointments.byVeterinary[vetIndex].revenue +=
+            appointment.consultationFee;
+        }
+
+        await revenueRecord.save();
+      } catch (revErr) {
+        console.error("Appointment revenue recording error:", revErr);
+      }
+    }
 
     await appointment.save();
 
@@ -426,17 +540,57 @@ exports.getAvailableSlots = async (req, res) => {
       });
     }
 
-    const allSlots = [
-      "09:00-10:00",
-      "10:00-11:00",
-      "11:00-12:00",
-      "12:00-13:00",
-      "13:00-14:00",
-      "14:00-15:00",
-      "15:00-16:00",
-      "16:00-17:00",
-      "17:00-18:00",
-    ];
+    // Fetch the veterinary's profile to get their available time slots and days
+    const vet = await User.findById(veterinary).select("vetInfo");
+    
+    if (!vet) {
+      return res.status(404).json({
+        success: false,
+        message: "Veterinary not found",
+      });
+    }
+
+    // Get the day of the week for the requested date
+    const requestedDate = new Date(date);
+    const dayOfWeek = requestedDate.toLocaleDateString("en-US", { weekday: "long" });
+
+    // Check if the vet is available on this day
+    const vetAvailableDays = vet.vetInfo?.availableDays || [];
+    if (vetAvailableDays.length > 0 && !vetAvailableDays.includes(dayOfWeek)) {
+      return res.json({
+        success: true,
+        data: {
+          date,
+          dayOfWeek,
+          isVetAvailable: false,
+          message: `Veterinary is not available on ${dayOfWeek}`,
+          allSlots: [],
+          bookedSlots: [],
+          availableSlots: [],
+        },
+      });
+    }
+
+    // Use vet's configured time slots, or default if not set
+    const vetTimeSlots = vet.vetInfo?.availableTimeSlots || [];
+    let allSlots;
+    
+    if (vetTimeSlots.length > 0) {
+      // Use vet's configured slots
+      allSlots = vetTimeSlots.map((slot) => `${slot.start}-${slot.end}`);
+    } else {
+      // Fallback to default slots if vet hasn't configured any
+      allSlots = [
+        "09:00-10:00",
+        "10:00-11:00",
+        "11:00-12:00",
+        "12:00-13:00",
+        "14:00-15:00",
+        "15:00-16:00",
+        "16:00-17:00",
+        "17:00-18:00",
+      ];
+    }
 
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
@@ -449,7 +603,12 @@ exports.getAvailableSlots = async (req, res) => {
       status: { $in: ["pending", "confirmed"] },
     }).select("timeSlot");
 
-    const bookedSlots = bookedAppointments.map((apt) => apt.timeSlot);
+    // Extract booked slot start times
+    const bookedSlots = bookedAppointments.map((apt) => {
+      if (typeof apt.timeSlot === "string") return apt.timeSlot;
+      return `${apt.timeSlot?.start}-${apt.timeSlot?.end}`;
+    });
+
     const availableSlots = allSlots.filter(
       (slot) => !bookedSlots.includes(slot)
     );
@@ -458,6 +617,9 @@ exports.getAvailableSlots = async (req, res) => {
       success: true,
       data: {
         date,
+        dayOfWeek,
+        isVetAvailable: true,
+        vetAvailableDays,
         allSlots,
         bookedSlots,
         availableSlots,
