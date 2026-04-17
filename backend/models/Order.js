@@ -1,5 +1,83 @@
 const mongoose = require("mongoose");
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     OrderItem:
+ *       type: object
+ *       properties:
+ *         product:
+ *           type: string
+ *         seller:
+ *           type: string
+ *         name:
+ *           type: string
+ *         price:
+ *           type: number
+ *         quantity:
+ *           type: number
+ *         image:
+ *           type: string
+ *     ShippingAddress:
+ *       type: object
+ *       properties:
+ *         fullName:
+ *           type: string
+ *         phone:
+ *           type: string
+ *         street:
+ *           type: string
+ *         city:
+ *           type: string
+ *         state:
+ *           type: string
+ *         zipCode:
+ *           type: string
+ *         country:
+ *           type: string
+ *     Order:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         orderNumber:
+ *           type: string
+ *         customer:
+ *           type: string
+ *         items:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/OrderItem'
+ *         subtotal:
+ *           type: number
+ *         tax:
+ *           type: number
+ *         shipping:
+ *           type: number
+ *         total:
+ *           type: number
+ *         shippingAddress:
+ *           $ref: '#/components/schemas/ShippingAddress'
+ *         status:
+ *           type: string
+ *           enum: [pending, processing, shipped, delivered, cancelled]
+ *         paymentMethod:
+ *           type: string
+ *           enum: [cod, card, upi, netbanking]
+ *         paymentStatus:
+ *           type: string
+ *           enum: [pending, paid, failed, refunded]
+ *         transactionId:
+ *           type: string
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ */
+
 const orderItemSchema = new mongoose.Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,
@@ -31,7 +109,6 @@ const orderSchema = new mongoose.Schema({
   orderNumber: {
     type: String,
     unique: true,
-    required: true,
   },
   customer: {
     type: mongoose.Schema.Types.ObjectId,
@@ -56,6 +133,14 @@ const orderSchema = new mongoose.Schema({
     required: true,
   },
   shippingAddress: {
+    fullName: {
+      type: String,
+      required: true,
+    },
+    phone: {
+      type: String,
+      required: true,
+    },
     street: {
       type: String,
       required: true,
@@ -106,6 +191,11 @@ const orderSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+
+// Common order queries
+orderSchema.index({ customer: 1, createdAt: -1 });
+orderSchema.index({ status: 1 });
+orderSchema.index({ status: 1, createdAt: -1 });
 
 orderSchema.pre("save", function (next) {
   if (!this.orderNumber) {

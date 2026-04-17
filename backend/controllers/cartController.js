@@ -6,7 +6,7 @@ const Product = require("../models/Product");
 // @access  Private
 exports.getCart = async (req, res) => {
   try {
-    let cart = await Cart.findOne({ user: req.user._id }).populate({
+    let cart = await Cart.findOne({ customer: req.user._id }).populate({
       path: "items.product",
       select: "name price salePrice onSale mainImage stock seller",
       populate: {
@@ -16,7 +16,7 @@ exports.getCart = async (req, res) => {
     });
 
     if (!cart) {
-      cart = await Cart.create({ user: req.user._id, items: [] });
+      cart = await Cart.create({ customer: req.user._id, items: [] });
     }
 
     await cart.calculateTotals();
@@ -56,11 +56,11 @@ exports.addToCart = async (req, res) => {
       });
     }
 
-    let cart = await Cart.findOne({ user: req.user._id });
+    let cart = await Cart.findOne({ customer: req.user._id });
 
     if (!cart) {
       cart = await Cart.create({
-        user: req.user._id,
+        customer: req.user._id,
         items: [],
       });
     }
@@ -68,6 +68,9 @@ exports.addToCart = async (req, res) => {
     const existingItemIndex = cart.items.findIndex(
       (item) => item.product.toString() === productId
     );
+
+    // Determine the price (sale price or regular price)
+    const price = product.onSale ? product.salePrice : product.price;
 
     if (existingItemIndex > -1) {
       const newQuantity = cart.items[existingItemIndex].quantity + quantity;
@@ -80,14 +83,14 @@ exports.addToCart = async (req, res) => {
       }
 
       cart.items[existingItemIndex].quantity = newQuantity;
-      cart.items[existingItemIndex].price = product.onSale
-        ? product.salePrice
-        : product.price;
+      cart.items[existingItemIndex].price = price;
     } else {
       cart.items.push({
         product: productId,
         quantity,
-        price: product.onSale ? product.salePrice : product.price,
+        price: price,
+        name: product.name,
+        image: product.mainImage || "default-product.jpg",
       });
     }
 
@@ -143,7 +146,7 @@ exports.updateCartItem = async (req, res) => {
       });
     }
 
-    const cart = await Cart.findOne({ user: req.user._id });
+    const cart = await Cart.findOne({ customer: req.user._id });
 
     if (!cart) {
       return res.status(404).json({
@@ -197,7 +200,7 @@ exports.removeFromCart = async (req, res) => {
   try {
     const { productId } = req.params;
 
-    const cart = await Cart.findOne({ user: req.user._id });
+    const cart = await Cart.findOne({ customer: req.user._id });
 
     if (!cart) {
       return res.status(404).json({
@@ -237,7 +240,7 @@ exports.removeFromCart = async (req, res) => {
 // @access  Private
 exports.clearCart = async (req, res) => {
   try {
-    const cart = await Cart.findOne({ user: req.user._id });
+    const cart = await Cart.findOne({ customer: req.user._id });
 
     if (!cart) {
       return res.status(404).json({
@@ -269,7 +272,7 @@ exports.clearCart = async (req, res) => {
 // @access  Private
 exports.validateCart = async (req, res) => {
   try {
-    const cart = await Cart.findOne({ user: req.user._id }).populate(
+    const cart = await Cart.findOne({ customer: req.user._id }).populate(
       "items.product"
     );
 
@@ -354,7 +357,7 @@ exports.validateCart = async (req, res) => {
 // @access  Private
 exports.getCartCount = async (req, res) => {
   try {
-    const cart = await Cart.findOne({ user: req.user._id });
+    const cart = await Cart.findOne({ customer: req.user._id });
 
     const count = cart
       ? cart.items.reduce((total, item) => total + item.quantity, 0)
