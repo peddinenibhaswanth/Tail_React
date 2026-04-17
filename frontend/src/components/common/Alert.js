@@ -46,8 +46,12 @@ const Alert = () => {
     alerts.push({ type: "danger", message: authMessage, reset: resetAuth });
   if (authSuccess && authMessage)
     alerts.push({ type: "success", message: authMessage, reset: resetAuth });
-  if (cartError && cartMessage)
+  // Only show cart errors if it's not a fetch error (show success messages for add to cart)
+  if (cartError && cartMessage && !cartMessage.toLowerCase().includes("fetch"))
     alerts.push({ type: "danger", message: cartMessage, reset: resetCart });
+  // Show cart success messages (like "Item added to cart!")
+  if (!cartError && cartMessage && cartMessage.toLowerCase().includes("added"))
+    alerts.push({ type: "success", message: cartMessage, reset: resetCart });
   if (petError && petMessage)
     alerts.push({ type: "danger", message: petMessage, reset: resetPets });
   if (petSuccess && petMessage)
