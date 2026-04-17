@@ -5,6 +5,9 @@ import petReducer from "./slices/petSlice";
 import productReducer from "./slices/productSlice";
 import orderReducer from "./slices/orderSlice";
 import appointmentReducer from "./slices/appointmentSlice";
+import dashboardReducer from "./slices/dashboardSlice";
+import adminReducer from "./slices/adminSlice";
+import messageReducer from "./slices/messageSlice";
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +17,9 @@ export const store = configureStore({
     products: productReducer,
     orders: orderReducer,
     appointments: appointmentReducer,
+    dashboard: dashboardReducer,
+    admin: adminReducer,
+    messages: messageReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
