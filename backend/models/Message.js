@@ -1,5 +1,69 @@
 const mongoose = require("mongoose");
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     RelatedTo:
+ *       type: object
+ *       properties:
+ *         entityType:
+ *           type: string
+ *           enum: [pet, product, order, appointment, application, none]
+ *         entityId:
+ *           type: string
+ *     ContactInfo:
+ *       type: object
+ *       properties:
+ *         name:
+ *           type: string
+ *         email:
+ *           type: string
+ *         phone:
+ *           type: string
+ *     Message:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *         sender:
+ *           type: string
+ *         recipient:
+ *           type: string
+ *         messageType:
+ *           type: string
+ *           enum: [contact, inquiry, support, adoption, product, appointment, admin]
+ *         subject:
+ *           type: string
+ *         body:
+ *           type: string
+ *         relatedTo:
+ *           $ref: '#/components/schemas/RelatedTo'
+ *         contactInfo:
+ *           $ref: '#/components/schemas/ContactInfo'
+ *         status:
+ *           type: string
+ *           enum: [unread, read, replied, resolved, archived]
+ *         priority:
+ *           type: string
+ *           enum: [low, normal, high, urgent]
+ *         readAt:
+ *           type: string
+ *           format: date-time
+ *         readBy:
+ *           type: string
+ *         replies:
+ *           type: array
+ *           items:
+ *             type: string
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ */
+
 const messageSchema = new mongoose.Schema(
   {
     // Sender information

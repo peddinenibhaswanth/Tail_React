@@ -11,8 +11,18 @@ const checkoutRoutes = require("./checkoutRoutes");
 const appointmentRoutes = require("./appointmentRoutes");
 const dashboardRoutes = require("./dashboardRoutes");
 const adminRoutes = require("./adminRoutes");
+const messageRoutes = require("./messageRoutes");
 
-// Health check route
+/**
+ * @swagger
+ * /api/health:
+ *   get:
+ *     summary: Health check
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: API is running
+ */
 router.get("/health", (req, res) => {
   res.json({
     success: true,
@@ -31,6 +41,7 @@ router.use("/checkout", checkoutRoutes);
 router.use("/appointments", appointmentRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/admin", adminRoutes);
+router.use("/messages", messageRoutes);
 
 // 404 handler for API routes
 router.use((req, res) => {
