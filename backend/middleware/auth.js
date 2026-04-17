@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
+// JWT Secret (same as in authController)
 const JWT_SECRET = process.env.JWT_SECRET || "your-jwt-secret-key-change-in-production";
 
 // Main JWT authentication middleware
@@ -74,38 +75,6 @@ const ensureGuest = (req, res, next) => {
     });
   }
   return next();
-};
-
-// Optional authentication middleware - authenticates if token present, continues if not
-// Useful for routes that need to behave differently for authenticated users
-const optionalAuthentication = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-    
-    // If no auth header, just continue without user
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return next();
-    }
-
-    const token = authHeader.split(" ")[1];
-    
-    if (!token) {
-      return next();
-    }
-
-    // Try to verify and attach user
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.id).select("-password");
-    
-    if (user) {
-      req.user = user;
-    }
-    
-    next();
-  } catch (error) {
-    // On error, just continue without user (don't block request)
-    next();
-  }
 };
 
 // All role-based middleware now uses req.user set by ensureAuthenticated
@@ -212,6 +181,35 @@ const isApproved = (req, res, next) => {
   });
 };
 
+const isOrganization = (req, res, next) => {
+  if (
+    req.user &&
+    req.user.role === "organization" &&
+    req.user.isApproved
+  ) {
+    return next();
+  }
+  return res.status(403).json({
+    success: false,
+    message: "Access denied. Approved organization account required.",
+  });
+};
+
+const isOrganizationOrAdmin = (req, res, next) => {
+  if (
+    req.user &&
+    ((req.user.role === "organization" && req.user.isApproved) ||
+      req.user.role === "admin" ||
+      req.user.role === "co-admin")
+  ) {
+    return next();
+  }
+  return res.status(403).json({
+    success: false,
+    message: "Access denied. Organization or admin privileges required.",
+  });
+};
+
 // Aliases for backward compatibility
 const isAuthenticated = ensureAuthenticated;
 const isAdminOrCoAdmin = isAdmin;
@@ -219,7 +217,6 @@ const isAdminOrCoAdmin = isAdmin;
 module.exports = {
   ensureAuthenticated,
   ensureGuest,
-  optionalAuthentication,
   isAdmin,
   isStrictlyAdmin,
   isSeller,
@@ -229,6 +226,8 @@ module.exports = {
   isCustomer,
   isAdminCoAdminOrSeller,
   isApproved,
+  isOrganization,
+  isOrganizationOrAdmin,
   isAuthenticated,
   isAdminOrCoAdmin,
 };

@@ -146,10 +146,15 @@ exports.createPet = async (req, res) => {
     }
 
     // Handle image uploads
-    if (req.files && req.files.length > 0) {
-      petData.images = req.files.map((file) => file.filename);
-      petData.mainImage = req.files[0].filename;
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one pet image is required",
+      });
     }
+
+    petData.images = req.files.map((file) => file.filename);
+    petData.mainImage = req.files[0].filename;
 
     const pet = await Pet.create(petData);
 
@@ -184,6 +189,17 @@ exports.updatePet = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Pet not found",
+      });
+    }
+
+    // Organization users can only update their own pets
+    if (
+      req.user.role === "organization" &&
+      pet.shelter.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only update pets you have created",
       });
     }
 
@@ -253,6 +269,17 @@ exports.deletePet = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Pet not found",
+      });
+    }
+
+    // Organization users can only delete their own pets
+    if (
+      req.user.role === "organization" &&
+      pet.shelter.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only delete pets you have created",
       });
     }
 

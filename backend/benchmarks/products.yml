@@ -1,0 +1,18 @@
+config:
+  target: "http://localhost:5000"
+  phases:
+    - name: warmup
+      duration: 10
+      arrivalRate: 2
+    - name: load
+      duration: 30
+      arrivalRate: 20
+  defaults:
+    headers:
+      Accept: "application/json"
+
+scenarios:
+  - name: products_list
+    flow:
+      - get:
+          url: "/api/products"

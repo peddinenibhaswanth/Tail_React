@@ -21,6 +21,14 @@ Thumbs.db
 
 # Uploaded files
 backend/uploads/
+WBD_Updated/
+
+
+
+/fix_authors.ps1
+/reassign_authors.sh
+/rewrite_authors.sh
+/run_filter.sh
 
 # IDE files
 .vscode/
