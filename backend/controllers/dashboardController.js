@@ -30,15 +30,26 @@ exports.getAdminDashboard = async (req, res) => {
     const pendingApplications = await AdoptionApplication.countDocuments({
       status: "pending",
     });
+    const pendingSellers = await User.countDocuments({
+      role: "seller",
+      isApproved: false,
+    });
+    const pendingVeterinarians = await User.countDocuments({
+      role: "veterinary",
+      isApproved: false,
+    });
 
     // Pet statistics
-    const totalPets = await Pet.countDocuments();
-    const availablePets = await Pet.countDocuments({
-      adoptionStatus: "available",
+    const totalPets = await Pet.countDocuments({
+      status: "available",
     });
-    const adoptedPets = await Pet.countDocuments({ adoptionStatus: "adopted" });
+    const availablePets = await Pet.countDocuments({
+      status: "available",
+    });
+    const adoptedPets = await Pet.countDocuments({ status: "adopted" });
     const petsByType = await Pet.aggregate([
-      { $group: { _id: "$petType", count: { $sum: 1 } } },
+      { $match: { status: "available" } },
+      { $group: { _id: "$species", count: { $sum: 1 } } },
     ]);
 
     // Product statistics
@@ -53,23 +64,31 @@ exports.getAdminDashboard = async (req, res) => {
       createdAt: { $gte: startDate },
     });
     const ordersByStatus = await Order.aggregate([
-      { $group: { _id: "$orderStatus", count: { $sum: 1 } } },
+      { $group: { _id: "$status", count: { $sum: 1 } } },
     ]);
 
-    // Revenue statistics
-    const revenueData = await Order.aggregate([
-      { $match: { orderStatus: "delivered", createdAt: { $gte: startDate } } },
-      {
-        $group: {
-          _id: null,
-          totalRevenue: { $sum: "$totalPrice" },
-          orderCount: { $sum: 1 },
-        },
-      },
-    ]);
+    const deliveredOrdersData = await Order.find({
+      status: "delivered",
+      createdAt: { $gte: startDate },
+    });
 
-    const totalRevenue = revenueData[0]?.totalRevenue || 0;
-    const deliveredOrders = revenueData[0]?.orderCount || 0;
+    let gmv = 0; // Gross Merchandise Value (total customer paid)
+    let productRevenue = 0; // Just product prices
+    let taxCollected = 0; // Tax collected from customers
+    let shippingRevenue = 0; // Shipping fees collected
+    let platformCommission = 0; // 10% commission from sellers
+
+    for (const order of deliveredOrdersData) {
+      gmv += order.total || 0;
+      const orderSubtotal = order.subtotal || 0;
+      productRevenue += orderSubtotal;
+      taxCollected += order.tax || 0;
+      shippingRevenue += order.shipping || 0;
+      platformCommission += orderSubtotal * 0.1; 
+    }
+
+    const deliveredOrders = deliveredOrdersData.length;
+    const netPlatformRevenue = platformCommission + shippingRevenue; // Platform actually keeps this
 
     // Appointment statistics
     const totalAppointments = await Appointment.countDocuments();
@@ -123,8 +142,17 @@ exports.getAdminDashboard = async (req, res) => {
         applications: {
           pending: pendingApplications,
         },
+        pendingApprovals: {
+          sellers: pendingSellers,
+          veterinarians: pendingVeterinarians,
+        },
         revenue: {
-          total: totalRevenue,
+          gmv: gmv, 
+          productSales: productRevenue, 
+          platformCommission: platformCommission, 
+          taxCollected: taxCollected, 
+          shippingRevenue: shippingRevenue, 
+          netPlatformRevenue: netPlatformRevenue, 
           period: `Last ${days} days`,
         },
         recentActivity,
@@ -150,6 +178,10 @@ exports.getSellerDashboard = async (req, res) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
+    // Define last7Days early to avoid reference error
+    const last7Days = new Date();
+    last7Days.setDate(last7Days.getDate() - 7);
+
     // Product statistics
     const totalProducts = await Product.countDocuments({ seller: sellerId });
     const activeProducts = await Product.countDocuments({
@@ -166,49 +198,82 @@ exports.getSellerDashboard = async (req, res) => {
     });
 
     // Order statistics (seller's products)
-    const sellerOrders = await Order.aggregate([
-      { $unwind: "$orderItems" },
-      { $match: { "orderItems.seller": sellerId } },
-      {
-        $group: {
-          _id: "$orderStatus",
-          count: { $sum: 1 },
-          revenue: {
-            $sum: { $multiply: ["$orderItems.price", "$orderItems.quantity"] },
-          },
-        },
-      },
-    ]);
+    // Get all orders containing seller's items
+    const ordersWithSellerItems = await Order.find({
+      "items.seller": sellerId,
+    }).lean();
 
-    const totalOrders = sellerOrders.reduce((acc, curr) => acc + curr.count, 0);
-    const totalRevenue = sellerOrders.reduce(
-      (acc, curr) => acc + curr.revenue,
-      0
-    );
+    // Calculate statistics
+    let totalOrders = 0;
+    let totalRevenue = 0;
+    let deliveredRevenue = 0;
+    let pendingRevenue = 0; // Revenue from orders awaiting delivery
+    const ordersByStatus = {};
+
+    const processedOrderIds = new Set();
+
+    for (const order of ordersWithSellerItems) {
+      // Only count unique orders
+      if (!processedOrderIds.has(order._id.toString())) {
+        processedOrderIds.add(order._id.toString());
+        totalOrders++;
+
+        // Initialize status count
+        if (!ordersByStatus[order.status]) {
+          ordersByStatus[order.status] = { count: 0, revenue: 0 };
+        }
+        ordersByStatus[order.status].count++;
+      }
+
+      // Calculate revenue from seller's items only
+      const sellerItemsRevenue = order.items
+        .filter((item) => item.seller.toString() === sellerId.toString())
+        .reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+      totalRevenue += sellerItemsRevenue;
+      ordersByStatus[order.status].revenue += sellerItemsRevenue;
+
+      // Count only delivered orders for revenue
+      if (order.status === "delivered") {
+        deliveredRevenue += sellerItemsRevenue;
+      }
+
+      // Count pending revenue from orders awaiting delivery (pending, processing, shipped)
+      if (["pending", "processing", "shipped"].includes(order.status)) {
+        pendingRevenue += sellerItemsRevenue;
+      }
+    }
+
+    // Format ordersByStatus for response
+    const sellerOrders = Object.keys(ordersByStatus).map((status) => ({
+      _id: status,
+      count: ordersByStatus[status].count,
+      revenue: ordersByStatus[status].revenue,
+    }));
 
     // Recent orders
     const recentOrders = await Order.countDocuments({
-      "orderItems.seller": sellerId,
+      "items.seller": sellerId,
       createdAt: { $gte: startDate },
     });
 
     // Pending orders requiring action
     const pendingOrders = await Order.countDocuments({
-      "orderItems.seller": sellerId,
-      orderStatus: { $in: ["pending", "processing"] },
+      "items.seller": sellerId,
+      status: { $in: ["pending", "processing"] },
     });
 
     // Product performance
     const topProducts = await Order.aggregate([
-      { $unwind: "$orderItems" },
-      { $match: { "orderItems.seller": sellerId } },
+      { $unwind: "$items" },
+      { $match: { "items.seller": sellerId } },
       {
         $group: {
-          _id: "$orderItems.product",
-          name: { $first: "$orderItems.name" },
-          totalSold: { $sum: "$orderItems.quantity" },
+          _id: "$items.product",
+          name: { $first: "$items.name" },
+          totalSold: { $sum: "$items.quantity" },
           revenue: {
-            $sum: { $multiply: ["$orderItems.price", "$orderItems.quantity"] },
+            $sum: { $multiply: ["$items.price", "$items.quantity"] },
           },
         },
       },
@@ -218,28 +283,25 @@ exports.getSellerDashboard = async (req, res) => {
 
     // Revenue trend (last 7 days)
     const revenueTrend = await Order.aggregate([
-      { $unwind: "$orderItems" },
+      { $unwind: "$items" },
       {
         $match: {
-          "orderItems.seller": sellerId,
+          "items.seller": sellerId,
           createdAt: { $gte: last7Days },
-          orderStatus: "delivered",
+          status: "delivered",
         },
       },
       {
         $group: {
           _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
           revenue: {
-            $sum: { $multiply: ["$orderItems.price", "$orderItems.quantity"] },
+            $sum: { $multiply: ["$items.price", "$items.quantity"] },
           },
           orders: { $sum: 1 },
         },
       },
       { $sort: { _id: 1 } },
     ]);
-
-    const last7Days = new Date();
-    last7Days.setDate(last7Days.getDate() - 7);
 
     res.json({
       success: true,
@@ -257,7 +319,10 @@ exports.getSellerDashboard = async (req, res) => {
           byStatus: sellerOrders,
         },
         revenue: {
-          total: totalRevenue,
+          grossSales: deliveredRevenue, 
+          commissionDeducted: deliveredRevenue * 0.1,
+          netEarnings: deliveredRevenue * 0.9, 
+          pendingRevenue: pendingRevenue,
           period: `Last ${days} days`,
         },
         topProducts,
@@ -406,14 +471,14 @@ exports.getCustomerDashboard = async (req, res) => {
     const userId = req.user._id;
 
     // Orders
-    const totalOrders = await Order.countDocuments({ user: userId });
+    const totalOrders = await Order.countDocuments({ customer: userId });
     const activeOrders = await Order.countDocuments({
-      user: userId,
-      orderStatus: { $in: ["pending", "processing", "shipped"] },
+      customer: userId,
+      status: { $in: ["pending", "processing", "shipped"] },
     });
     const completedOrders = await Order.countDocuments({
-      user: userId,
-      orderStatus: "delivered",
+      customer: userId,
+      status: "delivered",
     });
 
     // Appointments
@@ -423,7 +488,7 @@ exports.getCustomerDashboard = async (req, res) => {
     const upcomingAppointments = await Appointment.countDocuments({
       user: userId,
       date: { $gte: new Date() },
-      status: { $in: ["scheduled", "confirmed"] },
+      status: { $in: ["pending", "scheduled", "confirmed"] },
     });
 
     // Adoption applications
@@ -440,8 +505,8 @@ exports.getCustomerDashboard = async (req, res) => {
     });
 
     // Recent activity
-    const recentOrders = await Order.find({ user: userId })
-      .populate("orderItems.product", "name mainImage")
+    const recentOrders = await Order.find({ customer: userId })
+      .populate("items.product", "name mainImage")
       .sort("-createdAt")
       .limit(5)
       .lean();
