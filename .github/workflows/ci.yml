@@ -1,0 +1,76 @@
+﻿name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    name: Backend tests (WBD_Updated)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: WBD_Updated/backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: WBD_Updated/backend/package-lock.json
+
+      - name: Cache MongoDB binaries (mongodb-memory-server)
+        uses: actions/cache@v4
+        with:
+          path: WBD_Updated/backend/.cache/mongodb-binaries
+          key: ${{ runner.os }}-mongoms-${{ hashFiles('WBD_Updated/backend/package-lock.json') }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests (with coverage + JUnit report)
+        run: npm run test:ci
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports
+          path: |
+            WBD_Updated/backend/test-reports
+
+  frontend-build:
+    name: Frontend build (WBD_Updated)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: WBD_Updated/frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: WBD_Updated/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env:
+          REACT_APP_API_URL: http://localhost:5000
+          CI: "false"
+        run: npm run build

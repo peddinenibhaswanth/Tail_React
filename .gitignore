@@ -31,3 +31,6 @@ coverage/
 
 # Misc
 *.swp
+
+# Legacy workspace copy (do not track)
+WBD_Updated/
