@@ -1,6 +1,7 @@
 const Product = require("../models/Product"); // Product controller
 
 const Review = require("../models/Review");
+const Order = require("../models/Order");
 const { deleteFiles } = require("../middleware/upload");
 
 // @desc    Get all products with filters and pagination
@@ -421,6 +422,423 @@ exports.getCategories = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching categories",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Get approved reviews for a product
+// @route   GET /api/products/:id/reviews
+// @access  Public
+exports.getProductReviews = async (req, res) => {
+  try {
+    const reviews = await Review.find({
+      product: req.params.id,
+      status: "approved",
+    })
+      .populate("user", "name profilePicture")
+      .sort("-createdAt");
+
+    res.json({
+      success: true,
+      data: reviews,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching reviews",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Create a review for a delivered order's product
+// @route   POST /api/products/:id/reviews
+// @access  Private
+exports.createReview = async (req, res) => {
+  try {
+    const { rating, title, comment, orderId } = req.body;
+
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    if (String(order.customer) !== String(req.user._id)) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to review this order",
+      });
+    }
+
+    if (order.status !== "delivered") {
+      return res.status(400).json({
+        success: false,
+        message: "Only delivered orders can be reviewed",
+      });
+    }
+
+    const productInOrder = order.items.some(
+      (item) => String(item.product) === String(product._id)
+    );
+
+    if (!productInOrder) {
+      return res.status(400).json({
+        success: false,
+        message: "This product is not part of the specified order",
+      });
+    }
+
+    const reviewTitle = (title || "Review").toString().trim().slice(0, 100);
+    const reviewComment = (comment || "No comment provided.")
+      .toString()
+      .trim()
+      .slice(0, 1000);
+
+    const review = await Review.create({
+      product: product._id,
+      user: req.user._id,
+      order: order._id,
+      rating: Number(rating),
+      title: reviewTitle || "Review",
+      comment: reviewComment || "No comment provided.",
+      status: "approved",
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Review created successfully",
+      data: review,
+    });
+  } catch (error) {
+    // Duplicate review per user+product hits unique index
+    if (error && error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "You have already reviewed this product",
+      });
+    }
+    res.status(400).json({
+      success: false,
+      message: "Error creating review",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Delete a review
+// @route   DELETE /api/products/:id/reviews/:reviewId
+// @access  Private
+exports.deleteReview = async (req, res) => {
+  try {
+    const review = await Review.findOne({
+      _id: req.params.reviewId,
+      product: req.params.id,
+    });
+
+    if (!review) {
+      return res.status(404).json({
+        success: false,
+        message: "Review not found",
+      });
+    }
+
+    const isAdminUser =
+      req.user && (req.user.role === "admin" || req.user.role === "co-admin");
+    const isOwner = String(review.user) === String(req.user._id);
+
+    if (!isAdminUser && !isOwner) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to delete this review",
+      });
+    }
+
+    await review.remove();
+
+    res.json({
+      success: true,
+      message: "Review deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error deleting review",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Vote a review as helpful
+// @route   POST /api/products/:id/reviews/:reviewId/helpful
+// @access  Private
+exports.voteHelpful = async (req, res) => {
+  try {
+    const review = await Review.findOne({
+      _id: req.params.reviewId,
+      product: req.params.id,
+    });
+
+    if (!review) {
+      return res.status(404).json({
+        success: false,
+        message: "Review not found",
+      });
+    }
+
+    const alreadyVoted = review.votedBy.some(
+      (id) => String(id) === String(req.user._id)
+    );
+
+    if (!alreadyVoted) {
+      review.votedBy.push(req.user._id);
+      review.helpfulVotes = (review.helpfulVotes || 0) + 1;
+      await review.save();
+    }
+
+    res.json({
+      success: true,
+      message: "Vote recorded",
+      data: {
+        helpfulVotes: review.helpfulVotes,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error voting review",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Add images to an existing product
+// @route   POST /api/products/:id/images
+// @access  Private (Seller/Admin)
+exports.addImages = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    if (
+      req.user.role === "seller" &&
+      String(product.seller) !== String(req.user._id)
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update this product",
+      });
+    }
+
+    const newImages = (req.files || []).map((f) => f.filename);
+    if (newImages.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No images uploaded",
+      });
+    }
+
+    product.images = [...(product.images || []), ...newImages];
+    if (!product.mainImage) {
+      product.mainImage = newImages[0];
+    }
+
+    await product.save();
+
+    res.json({
+      success: true,
+      message: "Images added successfully",
+      data: product,
+    });
+  } catch (error) {
+    if (req.files && req.files.length > 0) {
+      const filenames = req.files.map((file) => `products/${file.filename}`);
+      deleteFiles(filenames);
+    }
+    res.status(500).json({
+      success: false,
+      message: "Error adding images",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Delete an image from a product by index
+// @route   DELETE /api/products/:id/images/:imageIndex
+// @access  Private (Seller/Admin)
+exports.deleteImage = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    if (
+      req.user.role === "seller" &&
+      String(product.seller) !== String(req.user._id)
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update this product",
+      });
+    }
+
+    const index = Number(req.params.imageIndex);
+    if (!Number.isInteger(index) || index < 0 || index >= (product.images || []).length) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid image index",
+      });
+    }
+
+    const [removed] = product.images.splice(index, 1);
+    if (removed) {
+      deleteFiles([`products/${removed}`]);
+    }
+
+    if (product.mainImage === removed) {
+      product.mainImage = product.images[0] || "default-product.jpg";
+    }
+
+    await product.save();
+
+    res.json({
+      success: true,
+      message: "Image deleted successfully",
+      data: product,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error deleting image",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Check which delivered products the user can review
+// @route   GET /api/products/reviews/check-eligibility
+// @access  Private
+exports.checkReviewEligibility = async (req, res) => {
+  try {
+    const orders = await Order.find({
+      customer: req.user._id,
+      status: "delivered",
+    }).select("items.product");
+
+    const deliveredProductIds = Array.from(
+      new Set(
+        orders
+          .flatMap((o) => o.items)
+          .map((i) => String(i.product))
+          .filter(Boolean)
+      )
+    );
+
+    if (deliveredProductIds.length === 0) {
+      return res.json({
+        success: true,
+        data: [],
+      });
+    }
+
+    const existing = await Review.find({
+      user: req.user._id,
+      product: { $in: deliveredProductIds },
+    }).select("product");
+
+    const reviewed = new Set(existing.map((r) => String(r.product)));
+    const eligibleIds = deliveredProductIds.filter((id) => !reviewed.has(id));
+
+    const products = await Product.find({ _id: { $in: eligibleIds } }).lean();
+
+    res.json({
+      success: true,
+      data: products,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error checking review eligibility",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Get all reviews for the authenticated seller's products
+// @route   GET /api/products/reviews/seller-reviews
+// @access  Private (Seller/Admin)
+exports.getSellerReviews = async (req, res) => {
+  try {
+    // Admin/co-admin can optionally pass sellerId to inspect, otherwise show all
+    let sellerId = null;
+    if (req.user.role === "seller") {
+      sellerId = req.user._id;
+    } else if (req.query && req.query.sellerId) {
+      sellerId = req.query.sellerId;
+    }
+
+    let productFilter = {};
+    if (sellerId) {
+      const sellerProducts = await Product.find({ seller: sellerId }).select("_id");
+      productFilter.product = { $in: sellerProducts.map((p) => p._id) };
+    }
+
+    const reviews = await Review.find(productFilter)
+      .populate("product", "name seller")
+      .populate("user", "name profilePicture")
+      .sort("-createdAt");
+
+    res.json({
+      success: true,
+      data: reviews,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching seller reviews",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Admin: get all reviews across all products
+// @route   GET /api/products/reviews/admin-all
+// @access  Private (Admin/Co-Admin)
+exports.getAllReviewsAdmin = async (req, res) => {
+  try {
+    const reviews = await Review.find({})
+      .populate("product", "name seller")
+      .populate("user", "name profilePicture")
+      .sort("-createdAt");
+
+    res.json({
+      success: true,
+      data: reviews,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching reviews",
       error: error.message,
     });
   }

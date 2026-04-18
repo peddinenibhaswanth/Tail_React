@@ -697,6 +697,46 @@ exports.cancelOrder = async (req, res) => {
   }
 };
 
+// @desc    (Admin) Restore stock for a cancelled order
+// @route   POST /api/orders/:id/restore-stock
+// @access  Private (Admin/Co-Admin)
+exports.restoreStock = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    if (order.status !== "cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: "Stock can only be restored for cancelled orders",
+      });
+    }
+
+    for (const item of order.items) {
+      await Product.findByIdAndUpdate(item.product, {
+        $inc: { stock: item.quantity },
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Stock restored successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error restoring stock",
+      error: error.message,
+    });
+  }
+};
+
 // @desc    Get seller orders
 // @route   GET /api/orders/seller/my-orders
 // @access  Private (Seller)

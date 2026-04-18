@@ -634,6 +634,98 @@ exports.getAvailableSlots = async (req, res) => {
   }
 };
 
+// @desc    Reverse geocode a latitude/longitude to an address (best-effort)
+// @route   GET /api/appointments/reverse-geocode?lat=..&lng=..
+// @access  Public
+exports.reverseGeocodeLocation = async (req, res) => {
+  const lat = Number(req.query.lat);
+  const lng = Number(req.query.lng);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return res.status(400).json({
+      success: false,
+      message: "Valid lat and lng query parameters are required",
+    });
+  }
+
+  // No external geocoding service is configured here; return coordinates so
+  // the client can display or use its own provider.
+  return res.json({
+    success: true,
+    data: {
+      lat,
+      lng,
+      address: null,
+    },
+  });
+};
+
+// @desc    (Veterinary) Update clinic address information
+// @route   POST /api/appointments/vet/update-address
+// @access  Private (Veterinary)
+exports.updateVetAddress = async (req, res) => {
+  try {
+    const { address, coordinates } = req.body || {};
+
+    if (!address || typeof address !== "object") {
+      return res.status(400).json({
+        success: false,
+        message: "Address object is required",
+      });
+    }
+
+    const update = {
+      "vetInfo.clinicAddress": {
+        line1: address.line1 || address.street || "",
+        line2: address.line2 || "",
+        city: address.city || "",
+        state: address.state || "",
+        pincode: address.pincode || address.zipCode || "",
+        country: address.country || "India",
+      },
+    };
+
+    const fullAddressParts = [
+      update["vetInfo.clinicAddress"].line1,
+      update["vetInfo.clinicAddress"].line2,
+      update["vetInfo.clinicAddress"].city,
+      update["vetInfo.clinicAddress"].state,
+      update["vetInfo.clinicAddress"].pincode,
+      update["vetInfo.clinicAddress"].country,
+    ].filter(Boolean);
+
+    update["vetInfo.fullAddress"] = fullAddressParts.join(", ");
+
+    if (
+      coordinates &&
+      typeof coordinates === "object" &&
+      Number.isFinite(Number(coordinates.lng)) &&
+      Number.isFinite(Number(coordinates.lat))
+    ) {
+      update["vetInfo.coordinates"] = {
+        type: "Point",
+        coordinates: [Number(coordinates.lng), Number(coordinates.lat)],
+      };
+    }
+
+    const user = await User.findByIdAndUpdate(req.user._id, { $set: update }, { new: true }).select(
+      "name email role vetInfo profilePicture"
+    );
+
+    return res.json({
+      success: true,
+      message: "Address updated successfully",
+      data: user,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error updating address",
+      error: error.message,
+    });
+  }
+};
+
 // @desc    Get appointment statistics
 // @route   GET /api/appointments/stats
 // @access  Private (Admin)
@@ -683,6 +775,7 @@ exports.getVeterinaries = async (req, res) => {
 
     res.json({
       success: true,
+      total: veterinaries.length,
       data: veterinaries,
     });
   } catch (error) {

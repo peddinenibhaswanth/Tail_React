@@ -202,6 +202,23 @@ const isAdminCoAdminOrSeller = (req, res, next) => {
   });
 };
 
+const isOrganizationOrAdmin = (req, res, next) => {
+  if (
+    req.user &&
+    (
+      req.user.role === "admin" ||
+      req.user.role === "co-admin" ||
+      (req.user.role === "organization" && req.user.isApproved)
+    )
+  ) {
+    return next();
+  }
+  return res.status(403).json({
+    success: false,
+    message: "Access denied. Organization or admin privileges required.",
+  });
+};
+
 const isApproved = (req, res, next) => {
   if (req.user && req.user.isApproved) {
     return next();
@@ -228,6 +245,7 @@ module.exports = {
   isVet,
   isCustomer,
   isAdminCoAdminOrSeller,
+  isOrganizationOrAdmin,
   isApproved,
   isAuthenticated,
   isAdminOrCoAdmin,
