@@ -90,11 +90,6 @@ const ApplicationManagement = () => {
     return <Badge bg={variants[status] || "secondary"}>{displayStatus}</Badge>;
   };
 
-  // Helper to check if status is finalized
-  const isStatusFinalized = (status) => {
-    return ["approved", "rejected"].includes(status);
-  };
-
   const filteredApplications = applications.filter((app) => {
     const matchesSearch =
       app.applicant?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||

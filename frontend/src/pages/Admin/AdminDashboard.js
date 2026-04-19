@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -12,7 +12,6 @@ import {
   Alert,
   Button,
   ButtonGroup,
-  Table,
 } from "react-bootstrap";
 import {
   AreaChart,

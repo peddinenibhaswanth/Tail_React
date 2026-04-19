@@ -62,7 +62,7 @@ const AppointmentList = () => {
     } else {
       dispatch(getUserAppointments());
     }
-  }, [dispatch, isVetView, isAdminView, user?.role]);
+  }, [dispatch, isVetView, isAdminView, user?.role, filter]);
 
   useEffect(() => {
     if (isSuccess && message?.includes("updated")) {

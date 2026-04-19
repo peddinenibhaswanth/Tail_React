@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
 
 const Footer = () => {
-  const { user, isAuthenticated, isAdmin, isCoAdmin, isSeller, isVeterinary, isOrganization } = useAuth();
+  const { isAuthenticated, isAdmin, isCoAdmin, isSeller, isVeterinary, isOrganization } = useAuth();
   
   // Only customers (and unauthenticated visitors) should see shop/adopt/appointment links
   const isCustomerOrGuest = !isAuthenticated || (!isAdmin && !isCoAdmin && !isSeller && !isVeterinary && !isOrganization);

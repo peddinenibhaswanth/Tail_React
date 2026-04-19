@@ -21,12 +21,10 @@ import {
   deleteMessage,
   resetAdmin,
 } from "../../redux/slices/adminSlice";
-import useAuth from "../../hooks/useAuth";
 
 const MessageManagement = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { messages, isLoading, isError, isSuccess, errorMessage } = useSelector(
     (state) => state.admin
   );

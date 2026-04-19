@@ -47,15 +47,16 @@ const UserManagement = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user: currentUser } = useAuth();
-  const { users, isLoading, isError, isSuccess, errorMessage, pagination } =
+  const { users, isLoading, isError, isSuccess, errorMessage } =
     useSelector((state) => state.admin);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   // Auto-detect co-admin filter from /admin/co-admins path
   const isCoAdminPage = location.pathname.includes("/co-admins");
   const initialRole = isCoAdminPage ? "co-admin" : (searchParams.get("role") || "");
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [submittedSearchTerm, setSubmittedSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState(initialRole);
   const [approvedFilter, setApprovedFilter] = useState(
     searchParams.get("approved") || ""
@@ -78,9 +79,9 @@ const UserManagement = () => {
     const params = {};
     if (roleFilter) params.role = roleFilter;
     if (approvedFilter) params.approved = approvedFilter;
-    if (searchTerm) params.search = searchTerm;
+    if (submittedSearchTerm) params.search = submittedSearchTerm;
     dispatch(getAllUsers(params));
-  }, [dispatch, roleFilter, approvedFilter]);
+  }, [dispatch, roleFilter, approvedFilter, submittedSearchTerm]);
 
   useEffect(() => {
     if (isSuccess) {
@@ -94,11 +95,7 @@ const UserManagement = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    const params = {};
-    if (roleFilter) params.role = roleFilter;
-    if (approvedFilter) params.approved = approvedFilter;
-    if (searchTerm) params.search = searchTerm;
-    dispatch(getAllUsers(params));
+    setSubmittedSearchTerm(searchTerm);
   };
 
   const handleDeleteClick = (user) => {

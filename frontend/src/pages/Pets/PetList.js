@@ -5,7 +5,6 @@ import { getPets } from "../../redux/slices/petSlice";
 import PetCard from "../../components/common/PetCard";
 import SkeletonCard from "../../components/common/SkeletonCard";
 import Loading from "../../components/common/Loading";
-import useScrollReveal from "../../hooks/useScrollReveal";
 import {
   PET_SPECIES,
   PET_SIZES,

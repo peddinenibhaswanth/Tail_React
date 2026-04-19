@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, useLocation } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import AppRoutes from "./routes";
 import Navbar from "./components/common/Navbar";
 import Footer from "./components/common/Footer";

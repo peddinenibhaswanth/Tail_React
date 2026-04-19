@@ -42,7 +42,7 @@ const SellerDashboard = () => {
     // Only fetch if missing to prevent full-page loading flash on navigation.
     if (!orders || orders.length === 0) dispatch(getSellerOrders());
     if (!dashboardData) dispatch(getSellerDashboard());
-  }, [dispatch]);
+  }, [dispatch, orders, dashboardData]);
 
   const getStatusBadge = (status) => {
     const statusColors = {

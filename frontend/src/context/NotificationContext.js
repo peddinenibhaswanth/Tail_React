@@ -18,6 +18,11 @@ export const useNotification = () => {
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
 
+  // Remove a notification by ID
+  const removeNotification = useCallback((id) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  }, []);
+
   // Add a new notification
   const addNotification = useCallback(
     (message, type = "info", duration = 5000) => {
@@ -41,13 +46,8 @@ export const NotificationProvider = ({ children }) => {
 
       return id;
     },
-    []
+    [removeNotification]
   );
-
-  // Remove a notification by ID
-  const removeNotification = useCallback((id) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  }, []);
 
   // Helper methods for different notification types
   const showSuccess = useCallback(

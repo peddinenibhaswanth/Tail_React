@@ -6,7 +6,6 @@ import {
   Card,
   Badge,
   Button,
-  Table,
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -15,7 +14,7 @@ import {
   cancelAppointment,
 } from "../../redux/slices/appointmentSlice";
 import Loading from "../../components/common/Loading";
-import { formatDate, formatDateTime } from "../../utils/formatters";
+import { formatDate } from "../../utils/formatters";
 
 const MyAppointments = () => {
   const navigate = useNavigate();

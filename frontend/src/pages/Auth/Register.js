@@ -154,7 +154,7 @@ const Register = () => {
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user, isLoading, isError, isSuccess, message } = useAuth();
+  const { isLoading, isError, isSuccess, message } = useAuth();
 
   useEffect(() => {
     // Only redirect on explicit success, not just because user exists in state

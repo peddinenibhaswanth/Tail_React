@@ -44,7 +44,7 @@ const CustomerDashboard = () => {
       dispatch(getUserAppointments());
     if (!dashboardData) dispatch(getCustomerDashboard());
     if (!userMessages || userMessages.length === 0) dispatch(getMyMessages());
-  }, [dispatch]);
+  }, [dispatch, orders, appointments, dashboardData, userMessages]);
 
   const getStatusBadge = (status) => {
     const statusColors = {

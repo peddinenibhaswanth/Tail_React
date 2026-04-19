@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Alert as BootstrapAlert } from "react-bootstrap";
 import { useSelector, useDispatch } from "react-redux";
 import { reset as resetAuth } from "../../redux/slices/authSlice";
@@ -40,50 +40,97 @@ const Alert = () => {
     message: appointmentMessage,
   } = useSelector((state) => state.appointments);
 
-  const alerts = [];
+  const alerts = useMemo(() => {
+    const items = [];
 
-  if (authError && authMessage)
-    alerts.push({ type: "danger", message: authMessage, reset: resetAuth });
-  if (authSuccess && authMessage)
-    alerts.push({ type: "success", message: authMessage, reset: resetAuth });
-  // Only show cart errors if it's not a fetch error (show success messages for add to cart)
-  if (cartError && cartMessage && !cartMessage.toLowerCase().includes("fetch"))
-    alerts.push({ type: "danger", message: cartMessage, reset: resetCart });
-  // Show cart success messages (like "Item added to cart!")
-  if (!cartError && cartMessage && cartMessage.toLowerCase().includes("added"))
-    alerts.push({ type: "success", message: cartMessage, reset: resetCart });
-  if (petError && petMessage)
-    alerts.push({ type: "danger", message: petMessage, reset: resetPets });
-  if (petSuccess && petMessage)
-    alerts.push({ type: "success", message: petMessage, reset: resetPets });
-  if (productError && productMessage)
-    alerts.push({
-      type: "danger",
-      message: productMessage,
-      reset: resetProducts,
-    });
-  if (productSuccess && productMessage)
-    alerts.push({
-      type: "success",
-      message: productMessage,
-      reset: resetProducts,
-    });
-  if (orderError && orderMessage)
-    alerts.push({ type: "danger", message: orderMessage, reset: resetOrders });
-  if (orderSuccess && orderMessage)
-    alerts.push({ type: "success", message: orderMessage, reset: resetOrders });
-  if (appointmentError && appointmentMessage)
-    alerts.push({
-      type: "danger",
-      message: appointmentMessage,
-      reset: resetAppointments,
-    });
-  if (appointmentSuccess && appointmentMessage)
-    alerts.push({
-      type: "success",
-      message: appointmentMessage,
-      reset: resetAppointments,
-    });
+    if (authError && authMessage) {
+      items.push({ type: "danger", message: authMessage, reset: resetAuth });
+    }
+    if (authSuccess && authMessage) {
+      items.push({ type: "success", message: authMessage, reset: resetAuth });
+    }
+
+    // Only show cart errors if it's not a fetch error (show success messages for add to cart)
+    if (
+      cartError &&
+      cartMessage &&
+      !cartMessage.toLowerCase().includes("fetch")
+    ) {
+      items.push({ type: "danger", message: cartMessage, reset: resetCart });
+    }
+    // Show cart success messages (like "Item added to cart!")
+    if (
+      !cartError &&
+      cartMessage &&
+      cartMessage.toLowerCase().includes("added")
+    ) {
+      items.push({ type: "success", message: cartMessage, reset: resetCart });
+    }
+
+    if (petError && petMessage) {
+      items.push({ type: "danger", message: petMessage, reset: resetPets });
+    }
+    if (petSuccess && petMessage) {
+      items.push({ type: "success", message: petMessage, reset: resetPets });
+    }
+
+    if (productError && productMessage) {
+      items.push({
+        type: "danger",
+        message: productMessage,
+        reset: resetProducts,
+      });
+    }
+    if (productSuccess && productMessage) {
+      items.push({
+        type: "success",
+        message: productMessage,
+        reset: resetProducts,
+      });
+    }
+
+    if (orderError && orderMessage) {
+      items.push({ type: "danger", message: orderMessage, reset: resetOrders });
+    }
+    if (orderSuccess && orderMessage) {
+      items.push({ type: "success", message: orderMessage, reset: resetOrders });
+    }
+
+    if (appointmentError && appointmentMessage) {
+      items.push({
+        type: "danger",
+        message: appointmentMessage,
+        reset: resetAppointments,
+      });
+    }
+    if (appointmentSuccess && appointmentMessage) {
+      items.push({
+        type: "success",
+        message: appointmentMessage,
+        reset: resetAppointments,
+      });
+    }
+
+    return items;
+  }, [
+    authError,
+    authSuccess,
+    authMessage,
+    cartError,
+    cartMessage,
+    petError,
+    petSuccess,
+    petMessage,
+    productError,
+    productSuccess,
+    productMessage,
+    orderError,
+    orderSuccess,
+    orderMessage,
+    appointmentError,
+    appointmentSuccess,
+    appointmentMessage,
+  ]);
 
   useEffect(() => {
     if (alerts.length > 0) {

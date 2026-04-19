@@ -42,7 +42,7 @@ const MapComponent = ({
   className = "",
   style = {},
 }) => {
-  if (!center || center[0] === 0 && center[1] === 0) {
+  if (!center || (center[0] === 0 && center[1] === 0)) {
     return (
       <div
         className={`d-flex align-items-center justify-content-center bg-light rounded ${className}`}

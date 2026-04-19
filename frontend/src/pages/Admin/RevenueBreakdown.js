@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Container,
@@ -27,11 +27,7 @@ const RevenueBreakdown = () => {
   const [vetRevenue, setVetRevenue] = useState([]);
   const [sellerRevenue, setSellerRevenue] = useState([]);
 
-  useEffect(() => {
-    fetchRevenueData();
-  }, [period]);
-
-  const fetchRevenueData = async () => {
+  const fetchRevenueData = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -45,7 +41,12 @@ const RevenueBreakdown = () => {
     } finally {
       setLoading(false);
     }
-  };
+
+  }, [period]);
+
+  useEffect(() => {
+    fetchRevenueData();
+  }, [fetchRevenueData]);
 
   const periodLabel =
     period === 7

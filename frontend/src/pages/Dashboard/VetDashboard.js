@@ -65,7 +65,7 @@ const VetDashboard = () => {
     // Only fetch if missing to avoid blocking spinner on every navigation.
     if (!appointments || appointments.length === 0) dispatch(getVetAppointments());
     if (!dashboardData) dispatch(getVeterinaryDashboard());
-  }, [dispatch]);
+  }, [dispatch, appointments, dashboardData]);
 
   const getStatusBadge = (status) => {
     const statusColors = {

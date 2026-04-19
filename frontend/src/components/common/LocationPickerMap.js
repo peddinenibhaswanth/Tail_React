@@ -66,14 +66,17 @@ const LocationPickerMap = ({
   height = "300px",
   label = "Clinic Location",
 }) => {
+  const initialLat = initialLocation?.lat;
+  const initialLng = initialLocation?.lng;
+
   const [position, setPosition] = useState(
-    initialLocation && initialLocation.lat && initialLocation.lng
-      ? [initialLocation.lat, initialLocation.lng]
+    initialLat && initialLng
+      ? [initialLat, initialLng]
       : null
   );
   const [mapCenter, setMapCenter] = useState(
-    initialLocation && initialLocation.lat && initialLocation.lng
-      ? [initialLocation.lat, initialLocation.lng]
+    initialLat && initialLng
+      ? [initialLat, initialLng]
       : [20.5937, 78.9629] // India center
   );
   const [geoLoading, setGeoLoading] = useState(false);
@@ -81,11 +84,11 @@ const LocationPickerMap = ({
 
   // Update position if initialLocation changes externally
   useEffect(() => {
-    if (initialLocation && initialLocation.lat && initialLocation.lng) {
-      setPosition([initialLocation.lat, initialLocation.lng]);
-      setMapCenter([initialLocation.lat, initialLocation.lng]);
+    if (initialLat && initialLng) {
+      setPosition([initialLat, initialLng]);
+      setMapCenter([initialLat, initialLng]);
     }
-  }, [initialLocation?.lat, initialLocation?.lng]);
+  }, [initialLat, initialLng]);
 
   const handleLocationSelect = (lat, lng) => {
     setPosition([lat, lng]);
