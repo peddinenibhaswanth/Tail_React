@@ -4,6 +4,7 @@ import * as messageService from "../../api/messageService";
 const initialState = {
   messages: [],
   message: null,
+  hasFetchedMyMessages: false,
   isLoading: false,
   isSuccess: false,
   isError: false,
@@ -99,15 +100,19 @@ export const messageSlice = createSlice({
       // Get my messages
       .addCase(getMyMessages.pending, (state) => {
         state.isLoading = true;
+        state.isError = false;
+        state.errorMessage = "";
       })
       .addCase(getMyMessages.fulfilled, (state, action) => {
         state.isLoading = false;
         state.messages = action.payload.data || [];
+        state.hasFetchedMyMessages = true;
       })
       .addCase(getMyMessages.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.errorMessage = action.payload;
+        state.hasFetchedMyMessages = true;
       })
       // Get single message
       .addCase(getMessage.pending, (state) => {

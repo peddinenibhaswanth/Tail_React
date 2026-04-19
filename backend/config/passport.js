@@ -53,14 +53,68 @@ module.exports = function (passport) {
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
   const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const publicApiUrl = process.env.PUBLIC_API_URL;
+  const renderExternalUrl = process.env.RENDER_EXTERNAL_URL;
   const port = process.env.PORT || 5000;
   const fallbackBaseUrl = `http://localhost:${port}`;
+
+  const normalizeBaseUrl = (raw) => {
+    if (!raw) return null;
+    const s = String(raw).trim();
+    if (!s) return null;
+    try {
+      return new URL(s).origin;
+    } catch {
+      // Allow env like "tail-react.onrender.com"
+      try {
+        return new URL(`https://${s}`).origin;
+      } catch {
+        return s.replace(/\/+$/g, "");
+      }
+    }
+  };
+
+  const isLocalhostOrigin = (raw) => {
+    if (!raw) return false;
+    try {
+      const u = new URL(String(raw));
+      return u.hostname === "localhost" || u.hostname === "127.0.0.1";
+    } catch {
+      return false;
+    }
+  };
+
+  const deployedBaseUrl =
+    normalizeBaseUrl(process.env.GOOGLE_CALLBACK_BASE_URL) ||
+    normalizeBaseUrl(publicApiUrl) ||
+    normalizeBaseUrl(renderExternalUrl);
+
+  const envCallbackUrl = process.env.GOOGLE_CALLBACK_URL
+    ? String(process.env.GOOGLE_CALLBACK_URL).trim()
+    : "";
+
+  const shouldIgnoreEnvCallbackUrl =
+    !!envCallbackUrl &&
+    isLocalhostOrigin(envCallbackUrl) &&
+    !!deployedBaseUrl &&
+    !isLocalhostOrigin(deployedBaseUrl);
+
+  const callbackBaseUrl = deployedBaseUrl || fallbackBaseUrl;
+
   const callbackURL =
-    process.env.GOOGLE_CALLBACK_URL ||
-    `${(publicApiUrl || fallbackBaseUrl).replace(/\/$/, "")}/api/auth/google/callback`;
+    (!shouldIgnoreEnvCallbackUrl && envCallbackUrl) ||
+    `${String(callbackBaseUrl).replace(/\/$/, "")}/api/auth/google/callback`;
 
   if (googleClientId && googleClientSecret) {
     const GoogleStrategy = require("passport-google-oauth20").Strategy;
+
+    if (shouldIgnoreEnvCallbackUrl) {
+      console.warn(
+        "WARN: GOOGLE_CALLBACK_URL points to localhost but a deployed base URL is present. Ignoring GOOGLE_CALLBACK_URL and using:",
+        callbackURL
+      );
+    } else {
+      console.log("Google OAuth callbackURL:", callbackURL);
+    }
 
     passport.use(
       new GoogleStrategy(

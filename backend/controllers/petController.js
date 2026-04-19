@@ -1,6 +1,18 @@
 const Pet = require("../models/Pet");
 const AdoptionApplication = require("../models/AdoptionApplication");
 const { deleteFiles } = require("../middleware/upload");
+const { bumpNamespaceVersion } = require("../services/cacheService");
+
+const isLocalStoredFilename = (value) => {
+  if (!value || typeof value !== "string") return false;
+  const v = value.trim();
+  if (!v) return false;
+  if (/^https?:\/\//i.test(v)) return false;
+  if (v.startsWith("data:")) return false;
+  if (v.startsWith("/")) return false;
+  // e.g. "pet-123.jpg" stored in DB
+  return !v.includes("/") && !v.includes("\\");
+};
 
 // @desc    Get all pets with filters and pagination
 // @route   GET /api/pets
@@ -153,6 +165,8 @@ exports.createPet = async (req, res) => {
 
     const pet = await Pet.create(petData);
 
+    bumpNamespaceVersion("pets").catch(() => {});
+
     res.status(201).json({
       success: true,
       message: "Pet created successfully",
@@ -215,7 +229,9 @@ exports.updatePet = async (req, res) => {
     if (req.files && req.files.length > 0) {
       // Delete old images
       if (pet.images && pet.images.length > 0) {
-        const oldImages = pet.images.map((img) => `pets/${img}`);
+        const oldImages = pet.images
+          .filter(isLocalStoredFilename)
+          .map((img) => `pets/${img}`);
         deleteFiles(oldImages);
       }
 
@@ -227,6 +243,8 @@ exports.updatePet = async (req, res) => {
       new: true,
       runValidators: true,
     });
+
+    bumpNamespaceVersion("pets").catch(() => {});
 
     res.json({
       success: true,
@@ -271,11 +289,15 @@ exports.deletePet = async (req, res) => {
 
     // Delete associated images
     if (pet.images && pet.images.length > 0) {
-      const imagePaths = pet.images.map((img) => `pets/${img}`);
+      const imagePaths = pet.images
+        .filter(isLocalStoredFilename)
+        .map((img) => `pets/${img}`);
       deleteFiles(imagePaths);
     }
 
     await pet.deleteOne();
+
+    bumpNamespaceVersion("pets").catch(() => {});
 
     res.json({
       success: true,
@@ -324,6 +346,8 @@ exports.updatePetStatus = async (req, res) => {
       message: "Pet status updated successfully",
       data: pet,
     });
+
+    bumpNamespaceVersion("pets").catch(() => {});
   } catch (error) {
     res.status(400).json({
       success: false,
@@ -452,6 +476,8 @@ exports.updateAdoptionStatus = async (req, res) => {
         message: "Pet not found",
       });
     }
+
+    bumpNamespaceVersion("pets").catch(() => {});
 
     res.json({
       success: true,

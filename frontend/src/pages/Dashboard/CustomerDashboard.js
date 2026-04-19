@@ -32,7 +32,11 @@ const CustomerDashboard = () => {
     isError,
     message,
   } = useSelector((state) => state.dashboard);
-  const { messages: userMessages, isLoading: messagesLoading } = useSelector(
+  const {
+    messages: userMessages,
+    isLoading: messagesLoading,
+    hasFetchedMyMessages,
+  } = useSelector(
     (state) => state.messages
   );
 
@@ -43,8 +47,8 @@ const CustomerDashboard = () => {
     if (!appointments || appointments.length === 0)
       dispatch(getUserAppointments());
     if (!dashboardData) dispatch(getCustomerDashboard());
-    if (!userMessages || userMessages.length === 0) dispatch(getMyMessages());
-  }, [dispatch, orders, appointments, dashboardData, userMessages]);
+    if (!hasFetchedMyMessages && !messagesLoading) dispatch(getMyMessages());
+  }, [dispatch, orders, appointments, dashboardData, hasFetchedMyMessages, messagesLoading]);
 
   const getStatusBadge = (status) => {
     const statusColors = {

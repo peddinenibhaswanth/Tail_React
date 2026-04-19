@@ -81,7 +81,9 @@ const setOauthStateCookie = (req, res, state) => {
   const secure = secureOverride !== undefined ? secureOverride : isHttpsRequest(req);
   res.cookie(OAUTH_STATE_COOKIE, state, {
     httpOnly: true,
-    sameSite: "lax",
+    // For OAuth redirect flows some browsers are stricter with cookies.
+    // Use SameSite=None when running over HTTPS, otherwise fall back to Lax for local dev.
+    sameSite: secure ? "none" : "lax",
     secure,
     maxAge: OAUTH_STATE_TTL_MS,
     path: "/api/auth",
@@ -178,7 +180,7 @@ router.get("/google/callback", (req, res, next) => {
     redirectUrl.searchParams.set("oauth", "failed");
     redirectUrl.searchParams.set(
       "message",
-      "Google authentication failed. Please try again."
+      "Google authentication failed (cookies/state blocked). Try again, or disable strict tracking prevention / use another browser."
     );
     return res.redirect(redirectUrl.toString());
   }

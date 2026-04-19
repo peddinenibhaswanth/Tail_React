@@ -9,6 +9,7 @@ const { validatePet } = require("../middleware/validators");
 const AdoptionApplication = require("../models/AdoptionApplication");
 const Pet = require("../models/Pet");
 const { createNotification } = require("../controllers/notificationController");
+const { bumpNamespaceVersion } = require("../services/cacheService");
 
 /**
  * @swagger
@@ -394,6 +395,8 @@ router.post("/adopt", isAuthenticated, async (req, res) => {
 
     // Update pet status to pending
     await Pet.findByIdAndUpdate(pet, { status: "pending" });
+
+    bumpNamespaceVersion("pets").catch(() => {});
 
     // Notify customer about adoption submission
     await createNotification({

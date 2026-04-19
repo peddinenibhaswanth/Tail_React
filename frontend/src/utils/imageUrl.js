@@ -1,4 +1,10 @@
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const getDefaultApiUrl = () => {
+  if (typeof window === "undefined") return "http://localhost:5000";
+  const { protocol, hostname } = window.location;
+  return `${protocol}//${hostname}:5000`;
+};
+
+const API_URL = (process.env.REACT_APP_API_URL || getDefaultApiUrl()).replace(/\/$/, "");
 
 export const resolveImageUrl = (value, folder) => {
   if (!value || typeof value !== "string") return "";
