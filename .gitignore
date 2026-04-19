@@ -34,3 +34,6 @@ coverage/
 
 # Legacy workspace copy (do not track)
 WBD_Updated/
+DDD_Report/
+/DDD_Report.tex
+/END_REVIEW_DEMO.md
