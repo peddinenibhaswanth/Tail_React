@@ -10,8 +10,7 @@ import {
   updateQuantityOptimistic,
   removeItemOptimistic,
 } from "../../redux/slices/cartSlice";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+import { resolveImageUrl } from "../../utils/imageUrl";
 
 const CartPage = () => {
   const dispatch = useDispatch();
@@ -64,8 +63,7 @@ const CartPage = () => {
   const getProductImage = (product) => {
     const image = product.mainImage || product.image;
     if (!image) return "/placeholder-product.png";
-    if (image.startsWith("http")) return image;
-    return `${API_URL}/uploads/products/${image}`;
+    return resolveImageUrl(image, "products");
   };
 
   if (isLoading) {

@@ -14,8 +14,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import axios from "../../api/axios";
 import NotificationContext from "../../context/NotificationContext";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
+import { resolveImageUrl } from "../../utils/imageUrl";
 
 // Inline SVG placeholder to prevent infinite error loops
 const DEFAULT_PET_IMAGE =
@@ -105,8 +104,7 @@ const MyApplications = () => {
 
   const getImageUrl = (image) => {
     if (!image) return DEFAULT_PET_IMAGE;
-    if (image.startsWith("http")) return image;
-    return `${API_URL}/uploads/pets/${image}`;
+    return resolveImageUrl(image, "pets") || DEFAULT_PET_IMAGE;
   };
 
   const handleViewDetails = (application) => {

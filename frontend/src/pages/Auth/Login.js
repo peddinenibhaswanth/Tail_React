@@ -8,12 +8,17 @@ import {
   Button,
   Alert,
 } from "react-bootstrap";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { login, reset } from "../../redux/slices/authSlice";
 import useAuth from "../../hooks/useAuth";
 import Loading from "../../components/common/Loading";
 import { isValidEmail } from "../../utils/validation";
+
+const API_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000").replace(
+  /\/$/,
+  ""
+);
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -25,8 +30,11 @@ const Login = () => {
 
   const { email, password } = formData;
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const { user, isLoading, isError, isSuccess, message } = useAuth();
+
+  const oauthMessage = new URLSearchParams(location.search).get("message");
 
   useEffect(() => {
     // If already logged in, redirect to dashboard
@@ -116,6 +124,27 @@ const Login = () => {
                   {message}
                 </Alert>
               )}
+
+              {oauthMessage && !isError && (
+                <Alert variant="warning" className="mb-3">
+                  {oauthMessage}
+                </Alert>
+              )}
+
+              <div className="d-grid gap-2 mb-3">
+                <Button
+                  type="button"
+                  variant="outline-dark"
+                  className="rounded-pill py-2 fw-semibold"
+                  onClick={() => {
+                    window.location.assign(`${API_URL}/api/auth/google`);
+                  }}
+                >
+                  Continue with Google
+                </Button>
+              </div>
+
+              <div className="text-center text-muted small mb-3">or</div>
 
               <Form onSubmit={onSubmit} noValidate>
                 <Form.Group className="mb-3">

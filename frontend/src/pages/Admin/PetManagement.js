@@ -17,8 +17,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { getPets, deletePet, resetPets, getMyPets } from "../../redux/slices/petSlice";
 import useAuth from "../../hooks/useAuth";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+import { resolveImageUrl } from "../../utils/imageUrl";
 
 const PetManagement = () => {
   const dispatch = useDispatch();
@@ -28,7 +27,7 @@ const PetManagement = () => {
   // Determine URL prefix based on role
   const isOrg = user?.role === "organization";
   const basePath = isOrg ? "/organization" : "/admin";
-  const { pets, isLoading, isError, isSuccess, message, pagination } =
+  const { pets, isLoading, isError, isSuccess, message } =
     useSelector((state) => state.pets);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -252,7 +251,7 @@ const PetManagement = () => {
                         <Image
                           src={
                             pet.mainImage
-                              ? `${API_URL}/uploads/pets/${pet.mainImage}`
+                              ? resolveImageUrl(pet.mainImage, "pets")
                               : "/placeholder-pet.png"
                           }
                           alt={pet.name}
@@ -325,7 +324,7 @@ const PetManagement = () => {
                 <Image
                   src={
                     selectedPet.mainImage
-                      ? `${API_URL}/uploads/pets/${selectedPet.mainImage}`
+                      ? resolveImageUrl(selectedPet.mainImage, "pets")
                       : "/placeholder-pet.png"
                   }
                   alt={selectedPet.name}
@@ -339,7 +338,7 @@ const PetManagement = () => {
                     {selectedPet.images.map((img, i) => (
                       <Image
                         key={i}
-                        src={`${API_URL}/uploads/pets/${img}`}
+                        src={resolveImageUrl(img, "pets")}
                         width={60}
                         height={60}
                         style={{ objectFit: "cover" }}

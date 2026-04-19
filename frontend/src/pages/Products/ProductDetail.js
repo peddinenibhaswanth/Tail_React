@@ -11,7 +11,7 @@ import {
   ProgressBar,
   Alert,
 } from "react-bootstrap";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   getProduct,
@@ -23,13 +23,11 @@ import Loading from "../../components/common/Loading";
 import ReviewForm from "../../components/products/ReviewForm";
 import { formatCurrency, formatDate } from "../../utils/formatters";
 import * as productService from "../../api/productService";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+import { resolveImageUrl } from "../../utils/imageUrl";
 
 const getImageUrl = (img) => {
   if (!img) return null;
-  if (img.startsWith("http")) return img;
-  return `${API_URL}/uploads/products/${img}`;
+  return resolveImageUrl(img, "products");
 };
 
 const DEFAULT_IMAGE =
@@ -535,7 +533,9 @@ const ProductDetail = () => {
                     <Alert variant="light" className="border text-muted small">
                       <i className="bi bi-bag-check me-2"></i>
                       Only verified purchasers can write a review. Go to{" "}
-                      <a href="/orders" className="text-decoration-none fw-semibold">your orders</a>{" "}
+                      <Link to="/orders" className="text-decoration-none fw-semibold">
+                        your orders
+                      </Link>{" "}
                       to review a product you have purchased.
                     </Alert>
                   )}
@@ -565,9 +565,13 @@ const ProductDetail = () => {
                               className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 overflow-hidden"
                               style={{ width: "42px", height: "42px", background: "#e9ecef", fontSize: "1rem", fontWeight: 700, color: "#6c757d" }}
                             >
-                              {review.user?.profilePicture ? (
+                              {review.user?.profileImage || review.user?.profilePicture ? (
                                 <img
-                                  src={`${API_URL}/uploads/users/${review.user.profilePicture}`}
+                                  src={resolveImageUrl(
+                                    review.user.profileImage ||
+                                      review.user.profilePicture,
+                                    "users"
+                                  )}
                                   alt={review.user.name}
                                   style={{ width: "42px", height: "42px", objectFit: "cover" }}
                                   onError={(e) => { e.target.style.display = "none"; }}

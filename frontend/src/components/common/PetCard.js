@@ -1,8 +1,7 @@
 import React from "react";
 import { Card, Badge, Button } from "react-bootstrap";
 import { Link } from "react-router-dom";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
+import { resolveImageUrl } from "../../utils/imageUrl";
 
 // Inline SVG placeholder to prevent infinite error loops
 const DEFAULT_PET_IMAGE =
@@ -37,8 +36,7 @@ const PetCard = ({ pet }) => {
   // Get image URL
   const getImageUrl = () => {
     if (!mainImage) return DEFAULT_PET_IMAGE;
-    if (mainImage.startsWith("http")) return mainImage;
-    return `${API_URL}/uploads/pets/${mainImage}`;
+    return resolveImageUrl(mainImage, "pets") || DEFAULT_PET_IMAGE;
   };
 
   return (

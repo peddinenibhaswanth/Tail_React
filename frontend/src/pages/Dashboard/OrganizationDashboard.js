@@ -13,8 +13,7 @@ import {
 } from "react-bootstrap";
 import useAuth from "../../hooks/useAuth";
 import axios from "../../api/axios";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+import { resolveImageUrl } from "../../utils/imageUrl";
 
 const OrganizationDashboard = () => {
   const { user } = useAuth();
@@ -22,16 +21,48 @@ const OrganizationDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const CACHE_KEY = "org-dashboard:myPets";
+  const CACHE_TTL_MS = 30 * 1000;
+
   useEffect(() => {
-    fetchMyPets();
+    // Show cached data immediately to avoid a loading flash on navigation.
+    try {
+      const raw = sessionStorage.getItem(CACHE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (
+          parsed &&
+          Array.isArray(parsed.data) &&
+          typeof parsed.fetchedAt === "number" &&
+          Date.now() - parsed.fetchedAt < CACHE_TTL_MS
+        ) {
+          setPets(parsed.data);
+          setIsLoading(false);
+        }
+      }
+    } catch {
+      // ignore cache read errors
+    }
+
+    fetchMyPets({ useBackgroundRefresh: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchMyPets = async () => {
+  const fetchMyPets = async ({ useBackgroundRefresh = false } = {}) => {
     try {
-      setIsLoading(true);
+      if (!useBackgroundRefresh) setIsLoading(true);
       const response = await axios.get("/api/pets/my-pets");
       if (response.data.success) {
-        setPets(response.data.data || []);
+        const nextPets = response.data.data || [];
+        setPets(nextPets);
+        try {
+          sessionStorage.setItem(
+            CACHE_KEY,
+            JSON.stringify({ data: nextPets, fetchedAt: Date.now() })
+          );
+        } catch {
+          // ignore cache write errors
+        }
       }
     } catch (err) {
       setError(err.response?.data?.message || "Error fetching pets");
@@ -81,7 +112,7 @@ const OrganizationDashboard = () => {
     });
   };
 
-  if (isLoading) {
+  if (isLoading && pets.length === 0) {
     return (
       <Container className="py-5 text-center">
         <Spinner animation="border" variant="primary" />
@@ -229,7 +260,7 @@ const OrganizationDashboard = () => {
                       <img
                         src={
                           pet.mainImage
-                            ? `${API_URL}/uploads/pets/${pet.mainImage}`
+                            ? resolveImageUrl(pet.mainImage, "pets")
                             : "/placeholder-pet.png"
                         }
                         alt={pet.name}

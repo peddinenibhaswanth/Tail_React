@@ -4,6 +4,7 @@ const petController = require("../controllers/petController");
 const { isAuthenticated, isAdminOrCoAdmin, isOrganizationOrAdmin } = require("../middleware/auth");
 const { uploadPetImages } = require("../middleware/upload");
 const { cacheResponse } = require("../middleware/cache");
+const { uploadRequestFilesToCloudinary } = require("../middleware/cloudinaryUpload");
 const { validatePet } = require("../middleware/validators");
 const AdoptionApplication = require("../models/AdoptionApplication");
 const Pet = require("../models/Pet");
@@ -457,6 +458,7 @@ router.post(
   isAuthenticated,
   isOrganizationOrAdmin,
   uploadPetImages,
+  uploadRequestFilesToCloudinary({ folder: "pets" }),
   validatePet,
   petController.createPet
 );
@@ -505,6 +507,7 @@ router.put(
   isAuthenticated,
   isOrganizationOrAdmin,
   uploadPetImages,
+  uploadRequestFilesToCloudinary({ folder: "pets" }),
   petController.updatePet
 );
 router.delete(

@@ -23,13 +23,12 @@ import {
   resetProducts,
 } from "../../redux/slices/productSlice";
 import useAuth from "../../hooks/useAuth";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+import { resolveImageUrl } from "../../utils/imageUrl";
 
 const ProductManagement = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user, isSeller, isAdmin, isStaff } = useAuth();
+  const { user, isSeller, isStaff } = useAuth();
   const { products, sellerProducts, isLoading, isError, isSuccess, message } =
     useSelector((state) => state.products);
 
@@ -290,7 +289,7 @@ const ProductManagement = () => {
                         <Image
                           src={
                             product.mainImage
-                              ? `${API_URL}/uploads/products/${product.mainImage}`
+                              ? resolveImageUrl(product.mainImage, "products")
                               : "/placeholder-product.png"
                           }
                           alt={product.name}
@@ -415,7 +414,7 @@ const ProductManagement = () => {
                 <Image
                   src={
                     selectedProduct.mainImage
-                      ? `${API_URL}/uploads/products/${selectedProduct.mainImage}`
+                      ? resolveImageUrl(selectedProduct.mainImage, "products")
                       : "/placeholder-product.png"
                   }
                   alt={selectedProduct.name}

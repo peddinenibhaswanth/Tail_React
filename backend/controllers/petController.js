@@ -90,7 +90,7 @@ exports.getPetById = async (req, res) => {
   try {
     const pet = await Pet.findById(req.params.id).populate(
       "shelter",
-      "name email phoneNumber address profilePicture"
+      "name email phoneNumber address profileImage"
     );
 
     if (!pet) {
@@ -147,8 +147,8 @@ exports.createPet = async (req, res) => {
 
     // Handle image uploads
     if (req.files && req.files.length > 0) {
-      petData.images = req.files.map((file) => file.filename);
-      petData.mainImage = req.files[0].filename;
+      petData.images = req.files.map((file) => file.cloudinaryUrl || file.filename);
+      petData.mainImage = req.files[0].cloudinaryUrl || req.files[0].filename;
     }
 
     const pet = await Pet.create(petData);
@@ -219,8 +219,8 @@ exports.updatePet = async (req, res) => {
         deleteFiles(oldImages);
       }
 
-      req.body.images = req.files.map((file) => file.filename);
-      req.body.mainImage = req.files[0].filename;
+      req.body.images = req.files.map((file) => file.cloudinaryUrl || file.filename);
+      req.body.mainImage = req.files[0].cloudinaryUrl || req.files[0].filename;
     }
 
     pet = await Pet.findByIdAndUpdate(req.params.id, req.body, {

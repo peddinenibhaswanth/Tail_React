@@ -37,10 +37,13 @@ const CustomerDashboard = () => {
   );
 
   useEffect(() => {
-    dispatch(getUserOrders());
-    dispatch(getUserAppointments());
-    dispatch(getCustomerDashboard());
-    dispatch(getMyMessages());
+    // Only fetch if we don't already have data cached in Redux.
+    // This avoids a full-page loading spinner every time you navigate away and back.
+    if (!orders || orders.length === 0) dispatch(getUserOrders());
+    if (!appointments || appointments.length === 0)
+      dispatch(getUserAppointments());
+    if (!dashboardData) dispatch(getCustomerDashboard());
+    if (!userMessages || userMessages.length === 0) dispatch(getMyMessages());
   }, [dispatch]);
 
   const getStatusBadge = (status) => {
@@ -58,8 +61,14 @@ const CustomerDashboard = () => {
   };
 
   const isLoading = ordersLoading || appointmentsLoading || dashboardLoading;
+  const hasCachedData =
+    Boolean(dashboardData) ||
+    (orders && orders.length > 0) ||
+    (appointments && appointments.length > 0) ||
+    (userMessages && userMessages.length > 0);
 
-  if (isLoading) {
+  // Only block the whole page on first load when nothing is cached yet.
+  if (isLoading && !hasCachedData) {
     return (
       <Container className="py-5 text-center">
         <Spinner animation="border" variant="primary" />

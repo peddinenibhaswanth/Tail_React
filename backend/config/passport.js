@@ -1,5 +1,5 @@
 const LocalStrategy = require("passport-local").Strategy;
-const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const User = require("../models/User");
 
 module.exports = function (passport) {
@@ -21,9 +21,11 @@ module.exports = function (passport) {
             });
           }
 
-          // Check if user is approved (for sellers and veterinaries)
+          // Check if user is approved (for sellers, veterinaries, organizations)
           if (
-            (user.role === "seller" || user.role === "veterinary") &&
+            (user.role === "seller" ||
+              user.role === "veterinary" ||
+              user.role === "organization") &&
             !user.isApproved
           ) {
             return done(null, false, {
@@ -32,8 +34,8 @@ module.exports = function (passport) {
             });
           }
 
-          // Match password
-          const isMatch = await bcrypt.compare(password, user.password);
+          // Match password (supports legacy plaintext upgrade)
+          const isMatch = await user.comparePassword(password);
 
           if (isMatch) {
             return done(null, user);
@@ -46,6 +48,105 @@ module.exports = function (passport) {
       }
     )
   );
+
+  // Google OAuth Strategy (optional, enabled only when env vars are provided)
+  const googleClientId = process.env.GOOGLE_CLIENT_ID;
+  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const publicApiUrl = process.env.PUBLIC_API_URL;
+  const port = process.env.PORT || 5000;
+  const fallbackBaseUrl = `http://localhost:${port}`;
+  const callbackURL =
+    process.env.GOOGLE_CALLBACK_URL ||
+    `${(publicApiUrl || fallbackBaseUrl).replace(/\/$/, "")}/api/auth/google/callback`;
+
+  if (googleClientId && googleClientSecret) {
+    const GoogleStrategy = require("passport-google-oauth20").Strategy;
+
+    passport.use(
+      new GoogleStrategy(
+        {
+          clientID: googleClientId,
+          clientSecret: googleClientSecret,
+          callbackURL,
+        },
+        async (_accessToken, _refreshToken, profile, done) => {
+          try {
+            const email = profile?.emails?.[0]?.value;
+            if (!email) {
+              return done(null, false, {
+                message:
+                  "Google account did not provide an email address. Please use a different sign-in method.",
+              });
+            }
+
+            const normalizedEmail = email.toLowerCase();
+            const googleId = profile.id;
+            const displayName = profile.displayName || normalizedEmail.split("@")[0];
+            const photoUrl = profile?.photos?.[0]?.value;
+
+            let user = await User.findOne({ email: normalizedEmail });
+
+            if (user) {
+              // Enforce the same approval rule for privileged roles
+              if (
+                (user.role === "seller" ||
+                  user.role === "veterinary" ||
+                  user.role === "organization") &&
+                !user.isApproved
+              ) {
+                return done(null, false, {
+                  message:
+                    "Your account is pending approval. Please wait for admin approval.",
+                });
+              }
+
+              let changed = false;
+              if (!user.googleId) {
+                user.googleId = googleId;
+                changed = true;
+              }
+              if (!user.authProvider) {
+                user.authProvider = "local";
+                changed = true;
+              }
+              if (
+                photoUrl &&
+                (user.profileImage === "/uploads/users/default-avatar.png" ||
+                  !user.profileImage)
+              ) {
+                user.profileImage = photoUrl;
+                changed = true;
+              }
+
+              if (changed) {
+                await user.save();
+              }
+              return done(null, user);
+            }
+
+            // Create a new customer account by default.
+            // This avoids bypassing admin approval for privileged roles.
+            const randomPassword = crypto.randomBytes(32).toString("hex");
+
+            user = new User({
+              name: displayName,
+              email: normalizedEmail,
+              password: randomPassword,
+              role: "customer",
+              authProvider: "google",
+              googleId,
+              profileImage: photoUrl || "/uploads/users/default-avatar.png",
+            });
+
+            await user.save();
+            return done(null, user);
+          } catch (err) {
+            return done(err);
+          }
+        }
+      )
+    );
+  }
 
   // Serialize user
   passport.serializeUser((user, done) => {

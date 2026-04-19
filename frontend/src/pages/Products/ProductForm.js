@@ -22,8 +22,8 @@ import { PRODUCT_CATEGORIES, PET_TYPES } from "../../utils/constants";
 import Loading from "../../components/common/Loading";
 import useAuth from "../../hooks/useAuth";
 import * as productService from "../../api/productService";
+import { resolveImageUrl } from "../../utils/imageUrl";
 
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 const MAX_IMAGES = 6;
 
 const ProductForm = () => {
@@ -466,7 +466,7 @@ const ProductForm = () => {
                         {existingImages.map((img, idx) => (
                           <div key={idx} className="position-relative" style={{ width: "90px", height: "90px" }}>
                             <img
-                              src={img.startsWith("http") ? img : `${API_URL}/uploads/products/${img}`}
+                              src={resolveImageUrl(img, "products")}
                               alt={`Product ${idx + 1}`}
                               className="rounded"
                               style={{ width: "90px", height: "90px", objectFit: "cover", border: idx === 0 ? "2px solid var(--bs-primary)" : "1px solid #dee2e6" }}

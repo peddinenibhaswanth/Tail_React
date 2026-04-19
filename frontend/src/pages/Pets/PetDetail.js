@@ -14,8 +14,7 @@ import { getPet } from "../../redux/slices/petSlice";
 import useAuth from "../../hooks/useAuth";
 import Loading from "../../components/common/Loading";
 import { formatDate } from "../../utils/formatters";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
+import { resolveImageUrl } from "../../utils/imageUrl";
 
 // Inline SVG placeholder to prevent infinite error loops
 const DEFAULT_PET_IMAGE =
@@ -65,8 +64,7 @@ const PetDetail = () => {
   // Get image URL
   const getImageUrl = (img) => {
     if (!img) return DEFAULT_PET_IMAGE;
-    if (img.startsWith("http")) return img;
-    return `${API_URL}/uploads/pets/${img}`;
+    return resolveImageUrl(img, "pets") || DEFAULT_PET_IMAGE;
   };
 
   const handleAdoptClick = () => {

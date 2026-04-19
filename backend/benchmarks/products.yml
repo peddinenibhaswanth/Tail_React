@@ -1,0 +1,25 @@
+config:
+  target: "{{ $processEnvironment.TARGET_URL || 'http://localhost:5000' }}"
+  phases:
+    - duration: 10
+      arrivalRate: 1
+    - duration: 30
+      arrivalRate: 5
+  defaults:
+    headers:
+      Accept: "application/json"
+scenarios:
+  - name: "List products (cached endpoint)"
+    flow:
+      - get:
+          url: "/api/products?search=toys&page=1&limit=12"
+      - get:
+          url: "/api/products?search=toys&page=1&limit=12"
+      - get:
+          url: "/api/products/featured"
+      - get:
+          url: "/api/products/featured"
+      - get:
+          url: "/api/products/sale"
+      - get:
+          url: "/api/products/sale"

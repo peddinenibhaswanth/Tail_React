@@ -4,6 +4,7 @@ const productController = require("../controllers/productController");
 const { isAuthenticated, isSellerOrAdmin } = require("../middleware/auth");
 const { uploadProductImages } = require("../middleware/upload");
 const { cacheResponse } = require("../middleware/cache");
+const { uploadRequestFilesToCloudinary } = require("../middleware/cloudinaryUpload");
 const {
   validateProduct,
   validateProductUpdate,
@@ -395,6 +396,7 @@ router.post(
   isAuthenticated,
   isSellerOrAdmin,
   uploadProductImages,
+  uploadRequestFilesToCloudinary({ folder: "products" }),
   validateProduct,
   productController.createProduct
 );
@@ -457,6 +459,7 @@ router.put(
   isAuthenticated,
   isSellerOrAdmin,
   uploadProductImages,
+  uploadRequestFilesToCloudinary({ folder: "products" }),
   validateProductUpdate,
   productController.updateProduct
 );
@@ -502,6 +505,7 @@ router.post(
   isAuthenticated,
   isSellerOrAdmin,
   uploadProductImages,
+  uploadRequestFilesToCloudinary({ folder: "products" }),
   productController.addImages
 );
 

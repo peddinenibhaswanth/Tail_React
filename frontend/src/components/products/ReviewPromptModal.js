@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Button, Badge } from "react-bootstrap";
+import { Modal, Button } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import useAuth from "../../hooks/useAuth";
 import * as productService from "../../api/productService";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+import { resolveImageUrl } from "../../utils/imageUrl";
 
 const getProductImageUrl = (img) => {
   if (!img) return null;
-  if (img.startsWith("http")) return img;
-  return `${API_URL}/uploads/products/${img}`;
+  return resolveImageUrl(img, "products");
 };
 
 const ReviewPromptModal = () => {

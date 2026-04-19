@@ -21,7 +21,6 @@ import {
   getAvailableSlots,
   clearAvailableSlots,
 } from "../../redux/slices/appointmentSlice";
-import useAuth from "../../hooks/useAuth";
 import Loading from "../../components/common/Loading";
 import LocationCapture from "../../components/common/LocationCapture";
 import MapComponent, {
@@ -29,8 +28,7 @@ import MapComponent, {
   blueIcon,
   greenIcon,
 } from "../../components/common/MapComponent";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
+import { resolveImageUrl } from "../../utils/imageUrl";
 
 const DEFAULT_AVATAR =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Crect fill='%23e0e0e0' width='60' height='60'/%3E%3Ctext fill='%23999' font-family='Arial' font-size='12' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E";
@@ -38,7 +36,6 @@ const DEFAULT_AVATAR =
 const BookAppointment = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user } = useAuth();
   const {
     isLoading,
     isError,
@@ -614,8 +611,11 @@ const BookAppointment = () => {
                       <div className="d-flex align-items-center mb-3">
                         <img
                           src={
-                            vet.profilePicture
-                              ? `${API_URL}/uploads/users/${vet.profilePicture}`
+                            vet.profileImage || vet.profilePicture
+                              ? resolveImageUrl(
+                                  vet.profileImage || vet.profilePicture,
+                                  "users"
+                                )
                               : DEFAULT_AVATAR
                           }
                           alt={vet.name}
@@ -886,8 +886,12 @@ const BookAppointment = () => {
                     <Col xs="auto">
                       <img
                         src={
-                          selectedVet.profilePicture
-                            ? `${API_URL}/uploads/users/${selectedVet.profilePicture}`
+                          selectedVet.profileImage || selectedVet.profilePicture
+                            ? resolveImageUrl(
+                                selectedVet.profileImage ||
+                                  selectedVet.profilePicture,
+                                "users"
+                              )
                             : DEFAULT_AVATAR
                         }
                         alt={selectedVet.name}

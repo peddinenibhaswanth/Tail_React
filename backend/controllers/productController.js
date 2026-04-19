@@ -26,9 +26,9 @@ exports.getAllProducts = async (req, res) => {
 
     const query = {};
 
-    // Case-insensitive category matching using regex
-    if (category) query.category = new RegExp(`^${category}$`, "i");
-    if (petType) query.petType = new RegExp(`^${petType}$`, "i");
+    // Normalize to enum values so Mongo can use indexes
+    if (category) query.category = String(category).toLowerCase();
+    if (petType) query.petType = String(petType).toLowerCase();
     if (seller) query.seller = seller;
     if (featured) query.featured = featured === "true";
     if (onSale) query.onSale = onSale === "true";
@@ -93,7 +93,7 @@ exports.getProductById = async (req, res) => {
       product: req.params.id,
       status: "approved",
     })
-      .populate("user", "name profilePicture")
+      .populate("user", "name profileImage")
       .sort("-createdAt")
       .limit(10);
 
@@ -136,8 +136,10 @@ exports.createProduct = async (req, res) => {
     }
 
     if (req.files && req.files.length > 0) {
-      productData.images = req.files.map((file) => file.filename);
-      productData.mainImage = req.files[0].filename;
+      productData.images = req.files.map(
+        (file) => file.cloudinaryUrl || file.filename
+      );
+      productData.mainImage = req.files[0].cloudinaryUrl || req.files[0].filename;
     }
 
     if (typeof productData.tags === "string") {
@@ -195,8 +197,8 @@ exports.updateProduct = async (req, res) => {
         deleteFiles(oldImages);
       }
 
-      req.body.images = req.files.map((file) => file.filename);
-      req.body.mainImage = req.files[0].filename;
+      req.body.images = req.files.map((file) => file.cloudinaryUrl || file.filename);
+      req.body.mainImage = req.files[0].cloudinaryUrl || req.files[0].filename;
     }
 
     if (typeof req.body.tags === "string") {
@@ -436,7 +438,7 @@ exports.getProductReviews = async (req, res) => {
       product: req.params.id,
       status: "approved",
     })
-      .populate("user", "name profilePicture")
+      .populate("user", "name profileImage")
       .sort("-createdAt");
 
     res.json({
@@ -646,7 +648,7 @@ exports.addImages = async (req, res) => {
       });
     }
 
-    const newImages = (req.files || []).map((f) => f.filename);
+    const newImages = (req.files || []).map((f) => f.cloudinaryUrl || f.filename);
     if (newImages.length === 0) {
       return res.status(400).json({
         success: false,
@@ -805,7 +807,7 @@ exports.getSellerReviews = async (req, res) => {
 
     const reviews = await Review.find(productFilter)
       .populate("product", "name seller")
-      .populate("user", "name profilePicture")
+      .populate("user", "name profileImage")
       .sort("-createdAt");
 
     res.json({
@@ -828,7 +830,7 @@ exports.getAllReviewsAdmin = async (req, res) => {
   try {
     const reviews = await Review.find({})
       .populate("product", "name seller")
-      .populate("user", "name profilePicture")
+      .populate("user", "name profileImage")
       .sort("-createdAt");
 
     res.json({

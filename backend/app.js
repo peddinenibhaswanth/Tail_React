@@ -4,9 +4,19 @@ const path = require("path");
 const helmet = require("helmet");
 const compression = require("compression");
 const rateLimit = require("express-rate-limit");
+const passport = require("passport");
 
 // Create Express app
 const app = express();
+
+// If running behind a reverse proxy (Render, etc.), enable trust proxy so
+// req.ip / req.secure behave correctly. Keep it opt-in to avoid surprises.
+if (process.env.TRUST_PROXY) {
+  const rawTrustProxy = String(process.env.TRUST_PROXY).trim().toLowerCase();
+  const trustProxyValue =
+    rawTrustProxy === "true" ? true : Number(rawTrustProxy) || 1;
+  app.set("trust proxy", trustProxyValue);
+}
 
 // ===========================================
 // SECURITY MIDDLEWARE - Helmet
@@ -74,6 +84,13 @@ const envCorsOrigins = (process.env.CLIENT_URL || "")
   .map((v) => v.trim())
   .filter(Boolean);
 
+const allowVercelPreviewOrigins =
+  String(process.env.ALLOW_VERCEL_PREVIEW_ORIGINS || "")
+    .trim()
+    .toLowerCase() === "true";
+
+const vercelPreviewOriginRegex = /^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)*\.vercel\.app$/i;
+
 const allowedOrigins = Array.from(
   new Set([...defaultCorsOrigins, ...envCorsOrigins])
 );
@@ -83,6 +100,9 @@ app.use(
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (allowVercelPreviewOrigins && vercelPreviewOriginRegex.test(origin)) {
+        return callback(null, true);
+      }
       return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,
@@ -94,6 +114,12 @@ app.use(
 // ===========================================
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// ===========================================
+// PASSPORT (OAuth strategies)
+// ===========================================
+require("./config/passport")(passport);
+app.use(passport.initialize());
 
 // Serve static files (uploads)
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -125,6 +151,7 @@ app.use("/api/revenue", require("./routes/revenueRoutes"));
 app.use("/api/messages", require("./routes/messageRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/partner", require("./routes/partnerRoutes"));
+app.use("/api/search", require("./routes/searchRoutes"));
 app.use("/api", require("./routes/indexRoutes"));
 
 // Error handling middleware

@@ -1,6 +1,6 @@
 ﻿import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Container,
   Row,
@@ -30,6 +30,7 @@ const CURRENCY = "\u20B9";
 
 const AdminDashboard = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { dashboardData, isLoading, isError, message } = useSelector(
     (state) => state.dashboard
@@ -40,7 +41,8 @@ const AdminDashboard = () => {
     dispatch(getAdminDashboard(period));
   }, [dispatch, period]);
 
-  if (isLoading) {
+  // Only block on very first load; keep existing data visible during refresh.
+  if (isLoading && !dashboardData) {
     return (
       <Container className="py-5 text-center">
         <Spinner animation="border" variant="primary" />
@@ -326,7 +328,11 @@ const AdminDashboard = () => {
       </Card>
 
       {/* Revenue Breakdown Link */}
-      <Card className="dashboard-card dashboard-card-purple mb-4" style={{ cursor: 'pointer' }} onClick={() => window.location.href = '/admin/revenue-breakdown'}>
+      <Card
+        className="dashboard-card dashboard-card-purple mb-4"
+        style={{ cursor: "pointer" }}
+        onClick={() => navigate("/admin/revenue-breakdown")}
+      >
         <Card.Body className="text-center p-4">
           <div className="dashboard-card-icon mx-auto mb-3">
             <i className="bi bi-pie-chart-fill"></i>

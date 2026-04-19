@@ -173,9 +173,13 @@ const CheckoutPage = () => {
           </ul>
           <p className="mb-0 small">Please update your cart before checking out.</p>
         </div>
-        <a href="/cart" className="btn btn-primary rounded-pill px-4">
+        <button
+          type="button"
+          className="btn btn-primary rounded-pill px-4"
+          onClick={() => navigate("/cart")}
+        >
           <i className="bi bi-cart3 me-1"></i>Go Back to Cart
-        </a>
+        </button>
       </div>
     );
   }

@@ -18,6 +18,7 @@ import Profile from "../pages/Auth/Profile";
 
 // ── Lazy-loaded pages (less frequently visited) ──
 const ForgotPassword = lazy(() => import("../pages/Auth/ForgotPassword"));
+const OAuthCallback = lazy(() => import("../pages/Auth/OAuthCallback"));
 const About = lazy(() => import("../pages/About"));
 const Contact = lazy(() => import("../pages/Contact"));
 const AdoptionApplication = lazy(() => import("../pages/Pets/AdoptionApplication"));
@@ -126,6 +127,7 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/oauth/callback" element={<OAuthCallback />} />
 
       {/* Pet Routes */}
       <Route path="/pets" element={<PetList />} />

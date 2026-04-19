@@ -11,11 +11,11 @@ permissions:
 
 jobs:
   backend-tests:
-    name: Backend tests (WBD_Updated)
+    name: Backend tests
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: WBD_Updated/backend
+        working-directory: backend
 
     steps:
       - name: Checkout
@@ -26,13 +26,13 @@ jobs:
         with:
           node-version: 18
           cache: npm
-          cache-dependency-path: WBD_Updated/backend/package-lock.json
+          cache-dependency-path: backend/package-lock.json
 
       - name: Cache MongoDB binaries (mongodb-memory-server)
         uses: actions/cache@v4
         with:
-          path: WBD_Updated/backend/.cache/mongodb-binaries
-          key: ${{ runner.os }}-mongoms-${{ hashFiles('WBD_Updated/backend/package-lock.json') }}
+          path: backend/.cache/mongodb-binaries
+          key: ${{ runner.os }}-mongoms-${{ hashFiles('backend/package-lock.json') }}
 
       - name: Install dependencies
         run: npm ci
@@ -46,14 +46,14 @@ jobs:
         with:
           name: backend-test-reports
           path: |
-            WBD_Updated/backend/test-reports
+            backend/test-reports
 
   frontend-build:
-    name: Frontend build (WBD_Updated)
+    name: Frontend build
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: WBD_Updated/frontend
+        working-directory: frontend
 
     steps:
       - name: Checkout
@@ -64,7 +64,7 @@ jobs:
         with:
           node-version: 18
           cache: npm
-          cache-dependency-path: WBD_Updated/frontend/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: npm ci

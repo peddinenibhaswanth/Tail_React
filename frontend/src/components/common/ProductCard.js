@@ -5,8 +5,7 @@ import { useDispatch } from "react-redux";
 import { addToCart, resetCart } from "../../redux/slices/cartSlice";
 import { formatCurrency } from "../../utils/formatters";
 import useAuth from "../../hooks/useAuth";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+import { resolveImageUrl } from "../../utils/imageUrl";
 
 // Inline SVG placeholder to prevent infinite error loops
 const DEFAULT_PRODUCT_IMAGE =
@@ -42,17 +41,14 @@ const ProductCard = ({ product }) => {
   const getImageUrl = () => {
     const img = mainImage || image;
     if (!img) return DEFAULT_PRODUCT_IMAGE;
-    if (img.startsWith("http")) return img;
-    return `${API_URL}/uploads/products/${img}`;
+    return resolveImageUrl(img, "products") || DEFAULT_PRODUCT_IMAGE;
   };
 
   const handleAddToCart = async () => {
     if (isAuthenticated) {
       setIsLoading(true);
       try {
-        const result = await dispatch(
-          addToCart({ product: _id, quantity: 1 })
-        ).unwrap();
+        await dispatch(addToCart({ product: _id, quantity: 1 })).unwrap();
         setAlertType("success");
         setAlertMessage("Item added to cart!");
         setShowAlert(true);

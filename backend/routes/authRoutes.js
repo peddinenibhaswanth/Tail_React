@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/authController");
+const passport = require("passport");
+const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
 const { ensureAuthenticated, ensureGuest } = require("../middleware/auth");
 const {
   validateRegister,
@@ -10,6 +13,99 @@ const {
 } = require("../middleware/validators");
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
+const { uploadRequestFilesToCloudinary } = require("../middleware/cloudinaryUpload");
+
+const isGoogleOauthConfigured = () =>
+  !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+
+const JWT_SECRET = process.env.JWT_SECRET || "your-jwt-secret-key-change-in-production";
+
+const OAUTH_STATE_COOKIE = "oauth_state";
+const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+
+const parseCookie = (cookieHeader, name) => {
+  if (!cookieHeader) return null;
+  const parts = cookieHeader.split(";").map((p) => p.trim());
+  for (const part of parts) {
+    const idx = part.indexOf("=");
+    if (idx === -1) continue;
+    const key = part.slice(0, idx).trim();
+    if (key !== name) continue;
+    return decodeURIComponent(part.slice(idx + 1));
+  }
+  return null;
+};
+
+const isHttpsRequest = (req) => {
+  if (req.secure) return true;
+  const xfProto = req.headers["x-forwarded-proto"];
+  if (typeof xfProto === "string") {
+    return xfProto.split(",")[0].trim().toLowerCase() === "https";
+  }
+  return false;
+};
+
+const parseEnvBool = (value) => {
+  if (value === undefined || value === null || value === "") return undefined;
+  const v = String(value).trim().toLowerCase();
+  if (v === "true" || v === "1" || v === "yes") return true;
+  if (v === "false" || v === "0" || v === "no") return false;
+  return undefined;
+};
+
+const getPrimaryClientUrl = () => {
+  const raw = process.env.CLIENT_URL || "http://localhost:3000";
+  return raw
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean)[0] || "http://localhost:3000";
+};
+
+const respondOAuthNotConfigured = (req, res) => {
+  const msg =
+    "Google OAuth is not configured on the server. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.";
+
+  if (req.accepts("html")) {
+    const redirectUrl = new URL("/login", getPrimaryClientUrl());
+    redirectUrl.searchParams.set("oauth", "failed");
+    redirectUrl.searchParams.set("message", msg);
+    return res.redirect(redirectUrl.toString());
+  }
+
+  return res.status(501).json({ success: false, message: msg });
+};
+
+const setOauthStateCookie = (req, res, state) => {
+  const secureOverride = parseEnvBool(process.env.OAUTH_COOKIE_SECURE);
+  const secure = secureOverride !== undefined ? secureOverride : isHttpsRequest(req);
+  res.cookie(OAUTH_STATE_COOKIE, state, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure,
+    maxAge: OAUTH_STATE_TTL_MS,
+    path: "/api/auth",
+  });
+};
+
+const clearOauthStateCookie = (res) => {
+  res.clearCookie(OAUTH_STATE_COOKIE, {
+    path: "/api/auth",
+  });
+};
+
+const generateOauthState = () => {
+  const nonce = crypto.randomBytes(16).toString("hex");
+  return jwt.sign({ nonce }, JWT_SECRET, { expiresIn: "10m" });
+};
+
+const verifyOauthState = (state) => {
+  jwt.verify(state, JWT_SECRET);
+  return true;
+};
+
+// Ensure local upload directory exists (used as a temporary staging area when Cloudinary is enabled)
+fs.mkdirSync(path.join(__dirname, "../uploads/users"), { recursive: true });
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -45,6 +141,68 @@ const upload = multer({
  */
 
 // Auth routes with validation
+
+// Google OAuth
+router.get("/google", (req, res, next) => {
+  if (!isGoogleOauthConfigured()) {
+    return respondOAuthNotConfigured(req, res);
+  }
+
+  const state = generateOauthState();
+  setOauthStateCookie(req, res, state);
+
+  return passport.authenticate("google", {
+    scope: ["profile", "email"],
+    session: false,
+    prompt: "select_account",
+    state,
+  })(req, res, next);
+});
+
+router.get("/google/callback", (req, res, next) => {
+  if (!isGoogleOauthConfigured()) {
+    return respondOAuthNotConfigured(req, res);
+  }
+
+  const returnedState = req.query?.state;
+  const cookieState = parseCookie(req.headers.cookie, OAUTH_STATE_COOKIE);
+
+  try {
+    if (!returnedState || !cookieState || returnedState !== cookieState) {
+      throw new Error("Invalid OAuth state");
+    }
+    verifyOauthState(returnedState);
+  } catch (e) {
+    clearOauthStateCookie(res);
+    const redirectUrl = new URL("/login", getPrimaryClientUrl());
+    redirectUrl.searchParams.set("oauth", "failed");
+    redirectUrl.searchParams.set(
+      "message",
+      "Google authentication failed. Please try again."
+    );
+    return res.redirect(redirectUrl.toString());
+  }
+
+  return passport.authenticate(
+    "google",
+    { session: false },
+    (err, user, info) => {
+      clearOauthStateCookie(res);
+      if (err || !user) {
+        const redirectUrl = new URL("/login", getPrimaryClientUrl());
+        redirectUrl.searchParams.set("oauth", "failed");
+        redirectUrl.searchParams.set(
+          "message",
+          info?.message || "Google authentication failed. Please try again."
+        );
+        return res.redirect(redirectUrl.toString());
+      }
+
+      req.user = user;
+      return authController.oauthSuccessRedirect(req, res);
+    }
+  )(req, res, next);
+});
 /**
  * @swagger
  * /api/auth/register:
@@ -199,6 +357,7 @@ router.put(
   "/profile",
   ensureAuthenticated,
   upload.single("profileImage"),
+  uploadRequestFilesToCloudinary({ folder: "users" }),
   validateProfileUpdate,
   authController.updateProfile
 );

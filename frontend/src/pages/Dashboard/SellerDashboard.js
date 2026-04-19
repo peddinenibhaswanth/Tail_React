@@ -39,8 +39,9 @@ const SellerDashboard = () => {
   const [newStatus, setNewStatus] = useState("");
 
   useEffect(() => {
-    dispatch(getSellerOrders());
-    dispatch(getSellerDashboard());
+    // Only fetch if missing to prevent full-page loading flash on navigation.
+    if (!orders || orders.length === 0) dispatch(getSellerOrders());
+    if (!dashboardData) dispatch(getSellerDashboard());
   }, [dispatch]);
 
   const getStatusBadge = (status) => {
@@ -69,6 +70,7 @@ const SellerDashboard = () => {
   };
 
   const isLoading = ordersLoading || dashboardLoading;
+  const hasCachedData = Boolean(dashboardData) || (orders && orders.length > 0);
 
   // Check if seller is approved
   if (!user?.isApproved) {
@@ -89,7 +91,8 @@ const SellerDashboard = () => {
     );
   }
 
-  if (isLoading) {
+  // Only show full-page spinner on first load.
+  if (isLoading && !hasCachedData) {
     return (
       <Container className="py-5 text-center">
         <Spinner animation="border" variant="primary" />

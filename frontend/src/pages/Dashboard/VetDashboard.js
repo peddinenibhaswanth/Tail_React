@@ -62,8 +62,9 @@ const VetDashboard = () => {
   const [clinicMessage, setClinicMessage] = useState({ type: "", text: "" });
 
   useEffect(() => {
-    dispatch(getVetAppointments());
-    dispatch(getVeterinaryDashboard());
+    // Only fetch if missing to avoid blocking spinner on every navigation.
+    if (!appointments || appointments.length === 0) dispatch(getVetAppointments());
+    if (!dashboardData) dispatch(getVeterinaryDashboard());
   }, [dispatch]);
 
   const getStatusBadge = (status) => {
@@ -164,6 +165,8 @@ const VetDashboard = () => {
   };
 
   const isLoading = appointmentsLoading || dashboardLoading;
+  const hasCachedData =
+    Boolean(dashboardData) || (appointments && appointments.length > 0);
 
   // Check if vet is approved
   if (!user?.isApproved) {
@@ -184,7 +187,8 @@ const VetDashboard = () => {
     );
   }
 
-  if (isLoading) {
+  // Only show full-page spinner on first load.
+  if (isLoading && !hasCachedData) {
     return (
       <Container className="py-5 text-center">
         <Spinner animation="border" variant="primary" />

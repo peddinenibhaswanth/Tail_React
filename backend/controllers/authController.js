@@ -7,6 +7,25 @@ const bcrypt = require("bcryptjs");
 const JWT_SECRET = process.env.JWT_SECRET || "your-jwt-secret-key-change-in-production";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d"; 
 
+const getPrimaryClientUrl = () => {
+  const raw = process.env.CLIENT_URL || "http://localhost:3000";
+  // CLIENT_URL can be a comma-separated list for CORS; use the first for redirects
+  return raw
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean)[0] || "http://localhost:3000";
+};
+
+const buildClientRedirect = (path, params = {}) => {
+  const base = getPrimaryClientUrl();
+  const url = new URL(path, base.endsWith("/") ? base : `${base}/`);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null) return;
+    url.searchParams.set(key, String(value));
+  });
+  return url.toString();
+};
+
 // Helper function to generate JWT token
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
@@ -121,7 +140,9 @@ exports.login = async (req, res) => {
     }
 
     if (
-      (user.role === "seller" || user.role === "veterinary") &&
+      (user.role === "seller" ||
+        user.role === "veterinary" ||
+        user.role === "organization") &&
       !user.isApproved
     ) {
       return res.status(401).json({
@@ -130,7 +151,7 @@ exports.login = async (req, res) => {
       });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await user.comparePassword(password);
 
     if (!isMatch) {
       return res.status(401).json({
@@ -156,6 +177,56 @@ exports.login = async (req, res) => {
       message: "Error during login",
       error: error.message,
     });
+  }
+};
+
+// OAuth success handler: issues a JWT and redirects to the frontend callback route.
+// The frontend will store the token and call /api/auth/current.
+exports.oauthSuccessRedirect = (req, res) => {
+  try {
+    const user = req.user;
+
+    if (!user) {
+      return res.redirect(
+        buildClientRedirect("/login", {
+          oauth: "failed",
+          message: "Authentication failed. Please try again.",
+        })
+      );
+    }
+
+    if (
+      (user.role === "seller" ||
+        user.role === "veterinary" ||
+        user.role === "organization") &&
+      !user.isApproved
+    ) {
+      return res.redirect(
+        buildClientRedirect("/login", {
+          oauth: "pending",
+          message:
+            "Your account is pending approval. Please wait for admin approval.",
+        })
+      );
+    }
+
+    const token = generateToken(user._id);
+    const oauthRedirectPath = process.env.OAUTH_REDIRECT_PATH || "/oauth/callback";
+
+    return res.redirect(
+      buildClientRedirect(oauthRedirectPath, {
+        token,
+        provider: "google",
+      })
+    );
+  } catch (error) {
+    console.error("OAuth redirect error:", error);
+    return res.redirect(
+      buildClientRedirect("/login", {
+        oauth: "failed",
+        message: "Authentication failed. Please try again.",
+      })
+    );
   }
 };
 
@@ -224,7 +295,8 @@ exports.updateProfile = async (req, res) => {
     }
 
     if (req.file) {
-      updateData.profileImage = `/uploads/users/${req.file.filename}`;
+      updateData.profileImage =
+        req.file.cloudinaryUrl || `/uploads/users/${req.file.filename}`;
     }
 
     const updatedUser = await User.findByIdAndUpdate(req.user.id, updateData, {

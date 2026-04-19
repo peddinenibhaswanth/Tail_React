@@ -59,6 +59,17 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  authProvider: {
+    type: String,
+    enum: ["local", "google"],
+    default: "local",
+  },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true,
+    index: true,
+  },
   role: {
     type: String,
     enum: ["customer", "seller", "veterinary", "organization", "admin", "co-admin"],
@@ -207,8 +218,30 @@ userSchema.pre("save", function (next) {
   next();
 });
 
+function isBcryptHash(value) {
+  return typeof value === "string" && /^\$2[aby]\$\d{2}\$/.test(value);
+}
+
 userSchema.methods.comparePassword = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  const storedPassword = this.password;
+  if (typeof storedPassword !== "string" || storedPassword.length === 0) {
+    return false;
+  }
+
+  // Normal path: bcrypt hashed password
+  if (isBcryptHash(storedPassword)) {
+    return await bcrypt.compare(candidatePassword, storedPassword);
+  }
+
+  // Legacy path: plaintext passwords (e.g. records inserted directly in MongoDB).
+  // If it matches, upgrade the stored password to bcrypt by saving the document.
+  const isMatch = candidatePassword === storedPassword;
+  if (isMatch) {
+    this.password = candidatePassword;
+    this.markModified("password");
+    await this.save();
+  }
+  return isMatch;
 };
 
 userSchema.methods.toJSON = function () {

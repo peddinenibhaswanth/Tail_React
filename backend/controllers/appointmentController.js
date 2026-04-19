@@ -66,7 +66,7 @@ exports.getMyAppointments = async (req, res) => {
     if (status) query.status = status;
 
     const appointments = await Appointment.find(query)
-      .populate("veterinary", "name email phoneNumber vetInfo profilePicture")
+      .populate("veterinary", "name email phoneNumber vetInfo profileImage")
       .sort("-date")
       .limit(limit * 1)
       .skip((page - 1) * limit)
@@ -111,7 +111,7 @@ exports.getVetAppointments = async (req, res) => {
     }
 
     const appointments = await Appointment.find(query)
-      .populate("customer", "name email phoneNumber profilePicture")
+      .populate("customer", "name email phoneNumber profileImage")
       .sort("date timeSlot")
       .limit(limit * 1)
       .skip((page - 1) * limit)
@@ -143,8 +143,8 @@ exports.getVetAppointments = async (req, res) => {
 exports.getAppointmentById = async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id)
-      .populate("customer", "name email phoneNumber address profilePicture")
-      .populate("veterinary", "name email phoneNumber vetInfo profilePicture");
+      .populate("customer", "name email phoneNumber address profileImage")
+      .populate("veterinary", "name email phoneNumber vetInfo profileImage");
 
     if (!appointment) {
       return res.status(404).json({
@@ -709,7 +709,7 @@ exports.updateVetAddress = async (req, res) => {
     }
 
     const user = await User.findByIdAndUpdate(req.user._id, { $set: update }, { new: true }).select(
-      "name email role vetInfo profilePicture"
+      "name email role vetInfo profileImage"
     );
 
     return res.json({
@@ -771,7 +771,9 @@ exports.getVeterinaries = async (req, res) => {
     const veterinaries = await User.find({
       role: "veterinary",
       isApproved: true,
-    }).select("name email phoneNumber vetInfo profilePicture");
+    })
+      .select("name email phoneNumber vetInfo profileImage")
+      .lean();
 
     res.json({
       success: true,
