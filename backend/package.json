@@ -12,7 +12,7 @@
     "benchmark:redis-on": "node scripts/runBenchmarks.js --redis=on",
     "benchmark:all": "node scripts/runBenchmarks.js --redis=both",
     "seed:benchmark": "node scripts/seedBenchmarkData.js",
-    "solr:reindex": "node scripts/solrReindex.js"
+    "solr:reindex": "node -r dotenv/config scripts/solrReindex.js dotenv_config_path=.env"
   },
   "keywords": [
     "pet",
