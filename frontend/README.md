@@ -2,7 +2,7 @@
 
 Modern React frontend for the Tail Waggers pet adoption and care platform.
 
-## Features
+## Features.
 
 - 🐾 **Pet Adoption**: Browse and apply to adopt pets
 - 🛒 **E-commerce**: Shop for pet products and supplies
