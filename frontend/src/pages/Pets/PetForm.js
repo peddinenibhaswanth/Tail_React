@@ -535,6 +535,7 @@ const PetForm = () => {
                     className="rounded-pill px-4"
                     onClick={() => navigate(user?.role === "organization" ? "/organization/pets" : "/admin/pets")}
                     disabled={isLoading}
+                    style = {{color : "green"}}
                   >
                     Cancel
                   </Button>
