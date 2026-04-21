@@ -9,6 +9,7 @@ beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create({
     instance: {
       dbName: "jest",
+      ip: "127.0.0.1",
       launchTimeout: 60000,
     },
   });

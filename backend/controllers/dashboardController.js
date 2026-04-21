@@ -88,7 +88,112 @@ exports.getAdminDashboard = async (req, res) => {
     }
 
     const deliveredOrders = deliveredOrdersData.length;
-    const netPlatformRevenue = platformCommission + shippingRevenue; // Platform actually keeps this
+    // Platform actually keeps: seller commission + shipping. (Appointment commission is added below.)
+    let netPlatformRevenue = platformCommission + shippingRevenue;
+
+    // Appointment revenue (gross) + platform commission from vet appointments
+    const appointmentRevenueByDay = await Appointment.aggregate([
+      {
+        $addFields: {
+          trendDate: { $ifNull: ["$updatedAt", "$createdAt"] },
+        },
+      },
+      {
+        $match: {
+          paymentStatus: "paid",
+          status: "completed",
+          trendDate: { $gte: startDate },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "veterinary",
+          foreignField: "_id",
+          as: "vetDetails",
+        },
+      },
+      { $unwind: { path: "$vetDetails", preserveNullAndEmptyArrays: true } },
+      {
+        $addFields: {
+          commissionRate: {
+            $ifNull: ["$vetDetails.vetInfo.commissionRate", 10],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$trendDate" },
+          },
+          revenue: { $sum: "$consultationFee" },
+          commission: {
+            $sum: {
+              $multiply: [
+                "$consultationFee",
+                { $divide: ["$commissionRate", 100] },
+              ],
+            },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    let appointmentRevenue = 0;
+    let appointmentCommission = 0;
+    let paidAppointments = 0;
+    for (const row of appointmentRevenueByDay) {
+      appointmentRevenue += row.revenue || 0;
+      appointmentCommission += row.commission || 0;
+      paidAppointments += row.count || 0;
+    }
+
+    const totalPlatformRevenue = platformCommission + appointmentCommission;
+    netPlatformRevenue = netPlatformRevenue + appointmentCommission;
+
+    // Revenue trend chart: platform revenue = order commission + appointment commission.
+    // Build from deliveredOrdersData to keep it consistent with platformCommission calculation.
+    const trendMap = new Map();
+    for (const order of deliveredOrdersData) {
+      const date = order.createdAt || order.updatedAt;
+      if (!date) continue;
+      const dayKey = new Date(date).toISOString().slice(0, 10); // YYYY-MM-DD
+      const orderRevenue = (order.subtotal || 0) * 0.1;
+      const existing = trendMap.get(dayKey);
+      if (!existing) {
+        trendMap.set(dayKey, {
+          _id: dayKey,
+          orderRevenue,
+          appointmentRevenue: 0,
+          revenue: orderRevenue,
+        });
+      } else {
+        existing.orderRevenue = (existing.orderRevenue || 0) + orderRevenue;
+        existing.revenue =
+          (existing.orderRevenue || 0) + (existing.appointmentRevenue || 0);
+      }
+    }
+    for (const row of appointmentRevenueByDay) {
+      const appointmentRevenueForChart = row.commission || 0;
+      const existing = trendMap.get(row._id);
+      if (!existing) {
+        trendMap.set(row._id, {
+          _id: row._id,
+          orderRevenue: 0,
+          appointmentRevenue: appointmentRevenueForChart,
+          revenue: appointmentRevenueForChart,
+        });
+      } else {
+        existing.appointmentRevenue = appointmentRevenueForChart;
+        existing.revenue =
+          (existing.orderRevenue || 0) + (existing.appointmentRevenue || 0);
+      }
+    }
+    const revenueTrend = Array.from(trendMap.values()).sort((a, b) =>
+      String(a._id).localeCompare(String(b._id))
+    );
 
     // Appointment statistics
     const totalAppointments = await Appointment.countDocuments();
@@ -153,7 +258,14 @@ exports.getAdminDashboard = async (req, res) => {
           taxCollected: taxCollected, 
           shippingRevenue: shippingRevenue, 
           netPlatformRevenue: netPlatformRevenue, 
+          appointmentRevenue: appointmentRevenue,
+          appointmentCommission: appointmentCommission,
+          paidAppointments: paidAppointments,
+          totalPlatformRevenue: totalPlatformRevenue,
           period: `Last ${days} days`,
+        },
+        charts: {
+          revenueTrend,
         },
         recentActivity,
       },
@@ -349,6 +461,8 @@ exports.getVeterinaryDashboard = async (req, res) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
+    const Transaction = require("../models/Transaction");
+
     // Appointment statistics
     const totalAppointments = await Appointment.countDocuments({
       veterinary: vetId,
@@ -411,11 +525,20 @@ exports.getVeterinaryDashboard = async (req, res) => {
       { $sort: { _id: 1 } },
     ]);
 
-    // Revenue from appointments (if tracking)
-    const revenue = await Appointment.aggregate([
+    // Revenue is recorded via ledger transactions when appointments are completed.
+    const vet = await User.findById(vetId)
+      .select("balance vetInfo.commissionRate")
+      .lean();
+
+    const commissionRate = vet?.vetInfo?.commissionRate || 10;
+    const currentBalance = vet?.balance || 0;
+
+    const periodRevenueAgg = await Transaction.aggregate([
       {
         $match: {
-          veterinary: vetId,
+          user: vetId,
+          type: "sale",
+          appointment: { $ne: null },
           status: "completed",
           createdAt: { $gte: startDate },
         },
@@ -423,14 +546,77 @@ exports.getVeterinaryDashboard = async (req, res) => {
       {
         $group: {
           _id: null,
-          total: { $sum: "$fee" },
-          count: { $sum: 1 },
+          totalRevenue: { $sum: "$amount" },
+          commissionAmount: { $sum: "$commission" },
+          netEarnings: { $sum: "$netAmount" },
+          paidAppointments: { $sum: 1 },
         },
       },
     ]);
 
-    const totalRevenue = revenue[0]?.total || 0;
-    const completedCount = revenue[0]?.count || 0;
+    const allTimeRevenueAgg = await Transaction.aggregate([
+      {
+        $match: {
+          user: vetId,
+          type: "sale",
+          appointment: { $ne: null },
+          status: "completed",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$amount" },
+          commissionAmount: { $sum: "$commission" },
+          netEarnings: { $sum: "$netAmount" },
+          paidAppointments: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const pendingPaymentsAgg = await Appointment.aggregate([
+      {
+        $match: {
+          veterinary: vetId,
+          paymentStatus: "pending",
+          status: { $nin: ["cancelled", "no-show"] },
+          createdAt: { $gte: startDate },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          pendingPayments: { $sum: "$consultationFee" },
+          pendingPaymentCount: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const revenueTrend = await Transaction.aggregate([
+      {
+        $match: {
+          user: vetId,
+          type: "sale",
+          appointment: { $ne: null },
+          status: "completed",
+          createdAt: { $gte: startDate },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+          },
+          revenue: { $sum: "$amount" },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const periodRev = periodRevenueAgg[0] || {};
+    const allTimeRev = allTimeRevenueAgg[0] || {};
+    const pendingRev = pendingPaymentsAgg[0] || {};
 
     res.json({
       success: true,
@@ -448,10 +634,23 @@ exports.getVeterinaryDashboard = async (req, res) => {
           next7Days: upcomingSchedule,
         },
         revenue: {
-          total: totalRevenue,
-          completedAppointments: completedCount,
+          total: periodRev.totalRevenue || 0,
+          commissionRate,
+          commissionAmount: periodRev.commissionAmount || 0,
+          netEarnings: periodRev.netEarnings || 0,
+          paidAppointments: periodRev.paidAppointments || 0,
+          pendingPayments: pendingRev.pendingPayments || 0,
+          pendingPaymentCount: pendingRev.pendingPaymentCount || 0,
+          allTime: {
+            totalRevenue: allTimeRev.totalRevenue || 0,
+            commission: allTimeRev.commissionAmount || 0,
+            netEarnings: allTimeRev.netEarnings || 0,
+            paidAppointments: allTimeRev.paidAppointments || 0,
+          },
+          currentBalance,
           period: `Last ${days} days`,
         },
+        revenueTrend,
       },
     });
   } catch (error) {

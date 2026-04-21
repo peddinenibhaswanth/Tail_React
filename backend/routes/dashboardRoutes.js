@@ -32,7 +32,7 @@ router.get(
   "/admin",
   isAuthenticated,
   isAdminOrCoAdmin,
-  cacheResponse({ namespace: "dashboard", ttlSeconds: 120, varyByUser: true }),
+  cacheResponse({ namespace: "dashboard_admin", ttlSeconds: 120, varyByUser: true }),
   dashboardController.getAdminDashboard
 );
 
