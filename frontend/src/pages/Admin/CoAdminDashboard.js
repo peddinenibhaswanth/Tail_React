@@ -19,7 +19,7 @@ import useAuth from "../../hooks/useAuth";
 const CoAdminDashboard = () => {
   const dispatch = useDispatch();
   const { user } = useAuth();
-  const { dashboardData, isLoading, isError, message } = useSelector(
+  const { dashboardData, dashboardType, isLoading, isError, message } = useSelector(
     (state) => state.dashboard
   );
   const [period, setPeriod] = useState(30);
@@ -28,7 +28,9 @@ const CoAdminDashboard = () => {
     dispatch(getAdminDashboard(period));
   }, [dispatch, period]);
 
-  if (isLoading) {
+  const hasDashboardDataForMe = dashboardType === "admin" && Boolean(dashboardData);
+
+  if (isLoading && !hasDashboardDataForMe) {
     return (
       <Container className="py-5 text-center">
         <Spinner animation="border" variant="primary" />
@@ -37,7 +39,7 @@ const CoAdminDashboard = () => {
     );
   }
 
-  const data = dashboardData || {};
+  const data = hasDashboardDataForMe ? dashboardData : {};
   const stats = {
     totalUsers: data.users?.total || 0,
     newUsers: data.users?.new || 0,

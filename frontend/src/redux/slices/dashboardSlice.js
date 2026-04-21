@@ -3,6 +3,7 @@ import * as dashboardService from "../../api/dashboardService";
 
 const initialState = {
   dashboardData: null,
+  dashboardType: null,
   isLoading: false,
   isError: false,
   isSuccess: false,
@@ -93,6 +94,7 @@ export const dashboardSlice = createSlice({
     },
     clearDashboard: (state) => {
       state.dashboardData = null;
+      state.dashboardType = null;
     },
   },
   extraReducers: (builder) => {
@@ -104,6 +106,7 @@ export const dashboardSlice = createSlice({
       .addCase(getAdminDashboard.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
+        state.dashboardType = "admin";
         state.dashboardData = action.payload.data || action.payload;
       })
       .addCase(getAdminDashboard.rejected, (state, action) => {
@@ -118,6 +121,7 @@ export const dashboardSlice = createSlice({
       .addCase(getSellerDashboard.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
+        state.dashboardType = "seller";
         state.dashboardData = action.payload.data || action.payload;
       })
       .addCase(getSellerDashboard.rejected, (state, action) => {
@@ -132,6 +136,7 @@ export const dashboardSlice = createSlice({
       .addCase(getVeterinaryDashboard.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
+        state.dashboardType = "veterinary";
         state.dashboardData = action.payload.data || action.payload;
       })
       .addCase(getVeterinaryDashboard.rejected, (state, action) => {
@@ -146,6 +151,7 @@ export const dashboardSlice = createSlice({
       .addCase(getCustomerDashboard.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
+        state.dashboardType = "customer";
         state.dashboardData = action.payload.data || action.payload;
       })
       .addCase(getCustomerDashboard.rejected, (state, action) => {

@@ -31,7 +31,7 @@ const AdminDashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { dashboardData, isLoading, isError, message } = useSelector(
+  const { dashboardData, dashboardType, isLoading, isError, message } = useSelector(
     (state) => state.dashboard
   );
   const [period, setPeriod] = useState(30);
@@ -40,8 +40,10 @@ const AdminDashboard = () => {
     dispatch(getAdminDashboard(period));
   }, [dispatch, period]);
 
-  // Only block on very first load; keep existing data visible during refresh.
-  if (isLoading && !dashboardData) {
+  const hasDashboardDataForMe = dashboardType === "admin" && Boolean(dashboardData);
+
+  // Only block on first load for this dashboard; keep existing data visible during refresh.
+  if (isLoading && !hasDashboardDataForMe) {
     return (
       <Container className="py-5 text-center">
         <Spinner animation="border" variant="primary" />
@@ -50,7 +52,7 @@ const AdminDashboard = () => {
     );
   }
 
-  const data = dashboardData || {};
+  const data = hasDashboardDataForMe ? dashboardData : {};
   const stats = {
     totalUsers: data.users?.total || 0,
     newUsers: data.users?.new || 0,
@@ -74,7 +76,10 @@ const AdminDashboard = () => {
     appointmentRevenue: data.revenue?.appointmentRevenue || 0,
     appointmentCommission: data.revenue?.appointmentCommission || 0,
     paidAppointments: data.revenue?.paidAppointments || 0,
-    totalPlatformRevenue: data.revenue?.totalPlatformRevenue || 0,
+    totalPlatformRevenue:
+      data.revenue?.totalPlatformRevenue ??
+      (data.revenue?.platformCommission || 0) +
+        (data.revenue?.appointmentCommission || 0),
     unreadMessages: data.unreadMessages || 0,
     customers:
       data.users?.byRole?.find((r) => r._id === "customer")?.count || 0,
@@ -105,6 +110,8 @@ const AdminDashboard = () => {
   const revenueTrendData = (data.charts?.revenueTrend || []).map((d) => ({
     date: fmtDate(d._id),
     revenue: Math.round(d.revenue || 0),
+    orderRevenue: Math.round(d.orderRevenue || 0),
+    appointmentRevenue: Math.round(d.appointmentRevenue || 0),
   }));
 
   return (

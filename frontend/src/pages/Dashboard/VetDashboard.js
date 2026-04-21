@@ -31,6 +31,7 @@ const VetDashboard = () => {
   );
   const {
     dashboardData,
+    dashboardType,
     isLoading: dashboardLoading,
     isError,
     message,
@@ -64,8 +65,8 @@ const VetDashboard = () => {
   useEffect(() => {
     // Only fetch if missing to avoid blocking spinner on every navigation.
     if (!appointments || appointments.length === 0) dispatch(getVetAppointments());
-    if (!dashboardData) dispatch(getVeterinaryDashboard());
-  }, [dispatch, appointments, dashboardData]);
+    if (dashboardType !== "veterinary" && !dashboardLoading) dispatch(getVeterinaryDashboard());
+  }, [dispatch, appointments, dashboardType, dashboardLoading]);
 
   const getStatusBadge = (status) => {
     const statusColors = {
@@ -165,8 +166,8 @@ const VetDashboard = () => {
   };
 
   const isLoading = appointmentsLoading || dashboardLoading;
-  const hasCachedData =
-    Boolean(dashboardData) || (appointments && appointments.length > 0);
+  const hasDashboardDataForMe = dashboardType === "veterinary" && Boolean(dashboardData);
+  const hasCachedData = hasDashboardDataForMe || (appointments && appointments.length > 0);
 
   // Check if vet is approved
   if (!user?.isApproved) {
@@ -198,7 +199,7 @@ const VetDashboard = () => {
   }
 
   // Extract nested data from API response
-  const data = dashboardData || {};
+  const data = hasDashboardDataForMe ? dashboardData : {};
   const stats = {
     totalAppointments: data.appointments?.total || appointments?.length || 0,
     upcomingAppointments: data.appointments?.upcoming || 0,

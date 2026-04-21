@@ -28,6 +28,7 @@ const CustomerDashboard = () => {
   );
   const {
     dashboardData,
+    dashboardType,
     isLoading: dashboardLoading,
     isError,
     message,
@@ -46,9 +47,9 @@ const CustomerDashboard = () => {
     if (!orders || orders.length === 0) dispatch(getUserOrders());
     if (!appointments || appointments.length === 0)
       dispatch(getUserAppointments());
-    if (!dashboardData) dispatch(getCustomerDashboard());
+    if (dashboardType !== "customer" && !dashboardLoading) dispatch(getCustomerDashboard());
     if (!hasFetchedMyMessages && !messagesLoading) dispatch(getMyMessages());
-  }, [dispatch, orders, appointments, dashboardData, hasFetchedMyMessages, messagesLoading]);
+  }, [dispatch, orders, appointments, dashboardType, dashboardLoading, hasFetchedMyMessages, messagesLoading]);
 
   const getStatusBadge = (status) => {
     const statusColors = {
@@ -65,8 +66,9 @@ const CustomerDashboard = () => {
   };
 
   const isLoading = ordersLoading || appointmentsLoading || dashboardLoading;
+  const hasDashboardDataForMe = dashboardType === "customer" && Boolean(dashboardData);
   const hasCachedData =
-    Boolean(dashboardData) ||
+    hasDashboardDataForMe ||
     (orders && orders.length > 0) ||
     (appointments && appointments.length > 0) ||
     (userMessages && userMessages.length > 0);
@@ -82,7 +84,7 @@ const CustomerDashboard = () => {
   }
 
   // Extract nested data from API response
-  const data = dashboardData || {};
+  const data = hasDashboardDataForMe ? dashboardData : {};
   const stats = {
     totalOrders: data.orders?.total || 0,
     activeOrders: data.orders?.active || 0,

@@ -29,6 +29,7 @@ const SellerDashboard = () => {
   );
   const {
     dashboardData,
+    dashboardType,
     isLoading: dashboardLoading,
     isError,
     message,
@@ -41,8 +42,8 @@ const SellerDashboard = () => {
   useEffect(() => {
     // Only fetch if missing to prevent full-page loading flash on navigation.
     if (!orders || orders.length === 0) dispatch(getSellerOrders());
-    if (!dashboardData) dispatch(getSellerDashboard());
-  }, [dispatch, orders, dashboardData]);
+    if (dashboardType !== "seller" && !dashboardLoading) dispatch(getSellerDashboard());
+  }, [dispatch, orders, dashboardType, dashboardLoading]);
 
   const getStatusBadge = (status) => {
     const statusColors = {
@@ -70,7 +71,8 @@ const SellerDashboard = () => {
   };
 
   const isLoading = ordersLoading || dashboardLoading;
-  const hasCachedData = Boolean(dashboardData) || (orders && orders.length > 0);
+  const hasDashboardDataForMe = dashboardType === "seller" && Boolean(dashboardData);
+  const hasCachedData = hasDashboardDataForMe || (orders && orders.length > 0);
 
   // Check if seller is approved
   if (!user?.isApproved) {
@@ -102,7 +104,7 @@ const SellerDashboard = () => {
   }
 
   // Extract nested data from API response
-  const data = dashboardData || {};
+  const data = hasDashboardDataForMe ? dashboardData : {};
   const stats = {
     totalProducts: data.products?.total || 0,
     activeProducts: data.products?.active || 0,
